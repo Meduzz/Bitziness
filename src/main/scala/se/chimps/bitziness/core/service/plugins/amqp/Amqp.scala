@@ -1,6 +1,6 @@
 package se.chimps.bitziness.core.service.plugins.amqp
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor.{Deploy, Props, Actor, ActorRef}
 import com.rabbitmq.client.AMQP.BasicProperties
 import io.github.drexin.akka.amqp.AMQP
 import io.github.drexin.akka.amqp.AMQP._
@@ -8,6 +8,7 @@ import se.chimps.bitziness.core.service.Service
 import se.chimps.bitziness.core.service.plugins.Plugin
 import akka.io.IO
 import scala.concurrent.duration._
+import java.util.concurrent.ExecutorService
 
 /**
  * Base trait for consuming and producing AMQP messages.
@@ -22,14 +23,15 @@ trait Amqp extends Plugin { service:Service =>
   }
 
   protected def subscribe(queueName:String, autoack:Boolean = true, handler:(Delivery)=>Unit) = {
-    // TODO we need a new actor that simply receives Delivery and runs it through the handler.
+    val actor = context.actorOf(Props[SubscribeActor]().withDeploy(Deploy.local), queueName)
+    actor ! new SubscribeCommand(endpoint, new Subscribe(queueName, autoack), handler)
   }
 
   protected def publish[T](exchange:String, routingKey:String, body:T, mandatory:Boolean = false, immidiate:Boolean = false, props:Option[BasicProperties] = None)(implicit converter:(T)=>Array[Byte]) = {
     endpoint ! Publish(exchange, routingKey, converter(body), mandatory, immidiate, props)
   }
 
-  // TODO add support to remove exchanges and unbind queues etc.
+  // TODO add support to remove exchanges and unbind queues etc. (basically the full api....)
 
   protected def setupAmqpEndpoint(builder:AmqpBuilder):AmqpSettings
 
