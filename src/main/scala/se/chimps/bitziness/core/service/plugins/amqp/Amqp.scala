@@ -15,7 +15,7 @@ import java.util.concurrent.ExecutorService
  */
 trait Amqp extends Plugin { service:Service =>
 
-  private val endpoint = IO(AMQP)
+  private val endpoint = IO(AMQP)(service.context.system)
   private val amqpSettings:AmqpSettings = setupAmqpEndpoint(new AmqpBuilderImpl(endpoint))
 
   def amqp:Receive = {

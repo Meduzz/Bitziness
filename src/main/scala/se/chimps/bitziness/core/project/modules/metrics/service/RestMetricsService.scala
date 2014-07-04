@@ -1,6 +1,5 @@
 package se.chimps.bitziness.core.project.modules.metrics.service
 
-import se.chimps.bitziness.core.project.modules.metrics.client.Messages.SimpleCounter
 import se.chimps.bitziness.core.service.Service
 
 /**

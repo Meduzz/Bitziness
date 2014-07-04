@@ -8,6 +8,8 @@ import akka.agent.Agent
  * Created by meduzz on 05/07/14.
  */
 class SubscribeActor extends Actor {
+  import scala.concurrent.ExecutionContext.Implicits.global
+
   val handlerAgent:Agent[(Delivery)=>Unit] = Agent.apply(dl => println(dl))
 
   override def receive:Receive = {

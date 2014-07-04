@@ -10,4 +10,6 @@ abstract class Service extends Actor {
   def handle:Receive
 
   override def receive:Actor.Receive = handle
+
+  // TODO intorduce service events, or application events. A method like Receive but for events generated internally.
 }
