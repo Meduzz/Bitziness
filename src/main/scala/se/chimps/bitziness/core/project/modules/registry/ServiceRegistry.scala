@@ -1,6 +1,8 @@
 package se.chimps.bitziness.core.project.modules.registry
 
-import se.chimps.bitziness.core.project.modules.Module
+import se.chimps.bitziness.core.generic.Event
+import se.chimps.bitziness.core.project.modules.events.Events
+import se.chimps.bitziness.core.project.modules.{events, Module}
 import se.chimps.bitziness.core.project.{ProjectBuilder, Project}
 import se.chimps.bitziness.core.service.Service
 import akka.actor.{Props, ActorSystem, ActorRef}
@@ -16,7 +18,10 @@ trait ServiceRegistry extends Module { project:Project =>
 
   def registerService[T<:Service](service:Class[T]) = {
     services = services ++ Seq(actorSystem.actorOf(Props(service), s"/project/services/${service.getSimpleName}"))
-    // TODO broadcast event of the new service.
+
+    if (hasFeature(classOf[Events])) {
+      project.asInstanceOf[Events].publish(new ServiceStarted(s"/project/services/${service.getSimpleName}"))
+    }
   }
 
   implicit def registryToProjectHook(builder:ProjectBuilder):Builder = {
@@ -32,3 +37,5 @@ trait ServiceRegistry extends Module { project:Project =>
 trait Builder {
   def addService[T<:Service](service:Class[T]):ProjectBuilder
 }
+
+case class ServiceStarted(service:String) extends Event
