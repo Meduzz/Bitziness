@@ -1,6 +1,7 @@
 package se.chimps.bitziness.core.service.plugins.events
 
 import akka.actor.Actor
+import se.chimps.bitziness.core.generic.Event
 import se.chimps.bitziness.core.service.Service
 import se.chimps.bitziness.core.service.plugins.Plugin
 
@@ -36,5 +37,3 @@ trait Builder {
   def subscribe[T<:Event](event:Class[T])
   def unsubscribe[T<:Event](event:Class[T])
 }
-
-sealed trait Event { }
