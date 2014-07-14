@@ -1,5 +1,7 @@
 package se.chimps.bitziness.core.generic
 
+import scala.reflect.ClassTag
+
 /**
  * Trait that can can look up if a candidate has a certain feature.
  */
@@ -11,7 +13,8 @@ trait HasFeature {
    * @tparam T the type or feature to look for.
    * @return returns TorF
    */
-  def hasFeature[T](candidate:AnyRef):Boolean = {
-    candidate.isInstanceOf[T]
+  def hasFeature[T : ClassTag](candidate:Any):Boolean = {
+    val clazz = implicitly[ClassTag[T]].runtimeClass
+    clazz.isInstance(candidate)
   }
 }
