@@ -8,7 +8,6 @@ import se.chimps.bitziness.core.service.Service
 import se.chimps.bitziness.core.service.plugins.Plugin
 import akka.io.IO
 import scala.concurrent.duration._
-import java.util.concurrent.ExecutorService
 
 /**
  * Base trait for consuming and producing AMQP messages.

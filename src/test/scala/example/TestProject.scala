@@ -1,9 +1,9 @@
 package example
 
-import se.chimps.bitziness.core.project.Project
+import se.chimps.bitziness.core.project.AbstractProject
 
-object TestProject extends Project {
+object TestProject extends AbstractProject {
   override def initialize(args:Array[String]):Unit = {
-    projectBuilder.addService(classOf[TestService])
+    registerService(classOf[TestService])
   }
 }

@@ -9,14 +9,18 @@ import se.chimps.bitziness.core.generic.HasFeature
  * A project contains the main-method that will be started by the jvm. It can be enchanced further with features like
  * metrics etc. Each project are supposed to have multiple services, the other way around will work, but will be messy to deploy.
  */
-abstract class Project extends ServiceRegistry with HasFeature {
+abstract class AbstractProject extends Project {
 
   val projectBuilder = ProjectBuilder(this)
   val actorSystem = ActorSystem("bitziness")
 
-  def initialize(args:Array[String]):Unit
-
   def main(args:Array[String]) = {
     initialize(args)
   }
+}
+
+trait Project extends ServiceRegistry with HasFeature {
+
+  def initialize(args:Array[String]):Unit
+
 }
