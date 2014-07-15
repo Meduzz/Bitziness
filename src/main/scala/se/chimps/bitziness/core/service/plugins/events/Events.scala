@@ -1,7 +1,7 @@
 package se.chimps.bitziness.core.service.plugins.events
 
 import akka.actor.Actor
-import se.chimps.bitziness.core.generic.Event
+import se.chimps.bitziness.core.generic.{EventStreamImpl, Event}
 import se.chimps.bitziness.core.service.Service
 import se.chimps.bitziness.core.service.plugins.Plugin
 
@@ -9,9 +9,10 @@ import se.chimps.bitziness.core.service.plugins.Plugin
  * A feature that allows services to generate and subscribe for internal events.
  */
 trait Events extends Plugin { service:Service =>
+  val eventStream = new EventStreamImpl
 
   def publish[T<:Event](event:T) = {
-    context.system.eventStream.publish(event)
+    eventStream.publish(event)
   }
 
   /**
@@ -24,11 +25,11 @@ trait Events extends Plugin { service:Service =>
 
   val builder:Builder = new Builder {
     override def subscribe[T <: Event](event:Class[T]):Unit = {
-      context.system.eventStream.subscribe(self, event)
+      eventStream.subscribe(self, event)
     }
 
     override def unsubscribe[T <: Event](event:Class[T]):Unit = {
-      context.system.eventStream.unsubscribe(self, event)
+      eventStream.unsubscribe(self, event)
     }
   }
 }
