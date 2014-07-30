@@ -1,42 +1,66 @@
 package se.chimps.bitziness.core.project.modules.events
 
-import akka.actor.{Props, ActorSystem}
+import akka.actor.{ActorRef, Props, ActorSystem}
 import akka.testkit.{TestKitBase, TestProbe, TestActorRef}
 import org.scalatest.FunSuite
 import se.chimps.bitziness.core.generic.{Event, EventStreamImpl}
-import se.chimps.bitziness.core.project.Project
-import se.chimps.bitziness.core.project.modules.registry.ServiceStarted
 import se.chimps.bitziness.core.service.Service
+import se.chimps.bitziness.core.service.plugins.events
 
 /**
  * Tests for the events module.
  */
 class EventsModuleTest extends FunSuite with TestKitBase {
   implicit lazy val system = ActorSystem("test")
-  val eventStream = new EventStreamImpl
+  val eventStream = EventStreamImpl()
 
-  test("registerEvent publishes an event") {
+  test("events are published") {
     val probe = TestProbe()
 
-    eventStream.subscribe(probe.ref, classOf[TestMsg])
+    TestActorRef(Props(classOf[ZeService], probe.ref, classOf[Ping]))
 
-    val msg = new TestMsg("spam")
-    val obj = new TestProject()
-    obj.triggerMessage(msg)
+    val msg = new Ping()
+    eventStream.publish(msg)
 
-    // This shite is not working...
     probe.expectMsg(msg)
   }
-}
 
-private class TestProject extends Project with Events {
-  val actorSystem:ActorSystem = ActorSystem("test")
+  test("events that are not subscribed to are not delivered") {
+    val probe = TestProbe()
 
-  override def initialize(args:Array[String]):Unit = {}
+    TestActorRef(Props(classOf[ZeService], probe.ref, classOf[Ping]))
 
-  def triggerMessage(msg:TestMsg) {
+    val msg = new Pong()
     eventStream.publish(msg)
+
+    probe.expectNoMsg()
   }
 }
 
-case class TestMsg(spam:String) extends Event
+case class Ping() extends Event
+case class Pong() extends Event
+
+class ZeService(val probe:ActorRef, val subscribe:Class[Event]) extends Service with events.Events {
+
+  override def handle:Receive = {
+    case x:Event => probe.forward(x)
+  }
+
+  /**
+   * A place for events to be handled, or leave it empty.
+   * @return
+   */
+  override def onEvent:Receive = {
+    case ping:Ping => {
+      probe.forward(ping)
+    }
+    case pong:Pong => {
+      probe.forward(pong)
+    }
+  }
+
+  @scala.throws[Exception](classOf[Exception])
+  override def preStart():Unit = {
+    this.builder.subscribe(subscribe)
+  }
+}

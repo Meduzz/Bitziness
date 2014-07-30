@@ -17,6 +17,8 @@ import scala.concurrent.Await
  */
 trait Amqp extends Plugin { service:Service =>
 
+  registerReceive(amqp)
+
   private val amqpExtension = IO(AMQP)(service.context.system)
   protected val (amqpConnection:ActorRef, amqpSetting:AmqpSettings):Tuple2[ActorRef, AmqpSettings] = SetupAmqpEndpoint(setupAmqpEndpoint)(new AmqpBuilderImpl(amqpExtension), settings => {
     import scala.concurrent.duration._
@@ -44,8 +46,6 @@ trait Amqp extends Plugin { service:Service =>
   def onMessage(consumerTag:String, envelop:Envelope, props:BasicProperties, body:Array[Byte]):Unit
 
   protected def setupAmqpEndpoint(builder:AmqpBuilder):AmqpSettings
-
-  override def receive:Receive = amqp.orElse(service.handle)
 }
 
 trait AmqpBuilder {

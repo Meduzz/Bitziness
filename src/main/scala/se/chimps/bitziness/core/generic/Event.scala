@@ -1,7 +1,7 @@
 package se.chimps.bitziness.core.generic
 
 import akka.actor.ActorRef
-import akka.event.{SubchannelClassification, LookupClassification, EventBus}
+import akka.event.{SubchannelClassification, EventBus}
 import akka.util.Subclassification
 import se.chimps.bitziness.core.generic
 
@@ -29,4 +29,10 @@ private class SubclassificationImpl extends Subclassification[Class[_]] {
   override def isEqual(x:Class[_], y:Class[_]):Boolean = x == y
 
   override def isSubclass(x:Class[_], y:Class[_]):Boolean = y isAssignableFrom x
+}
+
+object EventStreamImpl {
+  private lazy val stream = new EventStreamImpl()
+
+  def apply():EventStreamImpl = stream
 }

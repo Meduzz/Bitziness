@@ -2,7 +2,7 @@ package se.chimps.bitziness.core.project
 
 import akka.actor.ActorSystem
 import se.chimps.bitziness.core.project.modules.registry.ServiceRegistry
-import se.chimps.bitziness.core.generic.HasFeature
+import se.chimps.bitziness.core.generic.{Init, HasFeature}
 
 /**
  * This is the first class that will be extended.
