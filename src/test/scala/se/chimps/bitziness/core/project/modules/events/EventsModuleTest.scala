@@ -61,6 +61,6 @@ class ZeService(val probe:ActorRef, val subscribe:Class[Event]) extends Service 
 
   @scala.throws[Exception](classOf[Exception])
   override def preStart():Unit = {
-    this.builder.subscribe(subscribe)
+    this.internalEventsBuilder.subscribe(subscribe)
   }
 }

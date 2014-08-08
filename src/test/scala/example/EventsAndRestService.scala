@@ -16,7 +16,7 @@ class EventsAndRestService extends AbstractService with Events with REST {
   }
 
   @scala.throws[Exception](classOf[Exception])
-  override def preStart():Unit = builder.subscribe(classOf[SpamEvent])
+  override def preStart():Unit = internalEventsBuilder.subscribe(classOf[SpamEvent])
 
   override def initialize():Unit = {
     publish(new SpamEvent(s"Im (${getClass.getSimpleName}) alive!"))

@@ -22,7 +22,7 @@ trait Events extends Plugin { service:Service =>
    */
   def onEvent:Receive
 
-  val builder:Builder = new Builder {
+  val internalEventsBuilder:Builder = new Builder {
     override def subscribe[T <: Event](event:Class[T]):Unit = {
       eventStream.subscribe(self, event)
     }

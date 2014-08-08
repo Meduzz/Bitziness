@@ -32,7 +32,7 @@ class AmqpAndEventsService extends AbstractService with Amqp with Events {
 
   @scala.throws[Exception](classOf[Exception])
   override def preStart():Unit = {
-    builder.subscribe(classOf[SpamEvent])
+    internalEventsBuilder.subscribe(classOf[SpamEvent])
   }
 
   override def initialize():Unit = {
