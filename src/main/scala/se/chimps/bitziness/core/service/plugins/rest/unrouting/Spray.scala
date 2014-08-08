@@ -69,6 +69,7 @@ object Spray {
   object ActionWalker {
     def apply(actions:Map[Regex, Metadata]):ActionWalker = new ActionWalker {
       override def isDefinedAt(x: HttpRequest): Boolean = {
+        // TODO throw an exception when this returns more than 1.
         filter(x.uri.path.toString(), actions.keys).length == 1
       }
 

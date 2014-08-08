@@ -19,6 +19,7 @@ class ModuleTest extends FunSuite with TestKitBase {
     assertResponse(404, null, controller.request(get("/spam")), "Expected a 404...")
     assertResponse(200, "asdf", controller.request(post("/gringo", "asdf")))
     assertResponse(200, "They are all here!", controller.request(get("/a/b/c/d")), "No one home at /a/b/c/d")
+    assertResponse(404, null, controller.request(get("/q/q")), "Doublets did not lead to a 404.")
   }
 
   def request(method:HttpMethod, uri:String, body:Option[String]):HttpRequest = {
@@ -52,5 +53,7 @@ class Controller extends Module {
     get("/", Action((req)=>HttpResponse(200, HttpEntity("Hello!".getBytes("utf-8")))))
     post("/gringo", Action((req)=>HttpResponse(200, req.entity.asString(HttpCharsets.`UTF-8`))))
     get("/a/b/c/d", Action((req)=>HttpResponse(200, HttpEntity("They are all here!".getBytes("utf-8")))))
+    get("/q/q", Action((req)=>HttpResponse(200)))
+    get("/q/:q", Action((req)=>HttpResponse(200)))
   }
 }
