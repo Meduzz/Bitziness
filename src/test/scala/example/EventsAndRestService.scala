@@ -3,8 +3,9 @@ package example
 import se.chimps.bitziness.core.generic.Event
 import se.chimps.bitziness.core.service.AbstractService
 import se.chimps.bitziness.core.service.plugins.events.Events
+import se.chimps.bitziness.core.service.plugins.rest.{EndpointDefinition, RestEndpointBuilder, REST}
 
-class EventsAndRestService extends AbstractService with Events {
+class EventsAndRestService extends AbstractService with Events with REST {
 
   override def onEvent:Receive = {
     case m:Event => println(s"Events and Rest service received event: ${m}")
@@ -19,5 +20,9 @@ class EventsAndRestService extends AbstractService with Events {
 
   override def initialize():Unit = {
     publish(new SpamEvent(s"Im (${getClass.getSimpleName}) alive!"))
+  }
+
+  override def configureRestEndpoint(builder: RestEndpointBuilder): EndpointDefinition = {
+    builder.build()
   }
 }

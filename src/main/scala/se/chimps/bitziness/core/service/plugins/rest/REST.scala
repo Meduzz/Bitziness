@@ -1,62 +1,87 @@
 package se.chimps.bitziness.core.service.plugins.rest
 
-import akka.actor.ActorRef
+import akka.actor.{Props, ActorSystem, ActorRef}
+import akka.io.IO
 import se.chimps.bitziness.core.service.Service
 import se.chimps.bitziness.core.service.plugins.Plugin
+import se.chimps.bitziness.core.service.plugins.rest.unrouting.Spray.Module
+import spray.can.Http
 
 /**
  * Main trait for RESTful endpoints. Waiting for Akka-http to get stable before continuing with this.
  */
 trait REST extends Plugin { me:Service =>
 
-  def configureEndpoint(builder:RestEndpointBuilder):RestEndpointBuilder
+  def configureRestEndpoint(builder:RestEndpointBuilder):EndpointDefinition
 
-  val endpoint = configureEndpoint(new RestEndpointBuilderImpl(self))
+  val restEndpoint = SetupRestEndpoint(configureRestEndpoint)(context.system)(new RestEndpointBuilderImpl(me.self))
 }
 
 /**
  * Defaults to localhost:8080/
  */
 sealed trait RestEndpointBuilder {
-  def host(host:String):RestEndpointBuilder
-  def port(port:Int):RestEndpointBuilder
-  def basePath(path:String):RestEndpointBuilder
-  def addRoute(path:String, handler:(Request)=>Response):RestEndpointBuilder
+  def listen(host:String, port:Int):RestEndpointBuilder
+  def registerEndpoint(module:Module):RestEndpointBuilder
+  def build():EndpointDefinition
 }
 
-private class RestEndpointBuilderImpl(val handler:ActorRef) extends RestEndpointBuilder {
-  private var host:String = "localhost"
-  private var port:Int = 8080
-  private var base:String = "/"
-  private var routes:Map[String, (Request)=>Response] = Map()
+object EndpointDefinitionHolder {
+  private var endpoints = Map[String, EndpointDefinition]()
 
-  override def host(host: String): RestEndpointBuilder = {
-    this.host = host
-    this
+  def getOrElse(key:String, impl:EndpointDefinition):EndpointDefinition = {
+    val value = endpoints.getOrElse(key, impl)
+    if (value.equals(impl)) {
+      put(key, impl)
+    }
+    value
   }
 
-  override def basePath(path: String): RestEndpointBuilder = {
-    this.base = path
-    this
-  }
-
-  override def port(port: Int): RestEndpointBuilder = {
-    this.port = port
-    this
-  }
-
-  override def addRoute(path: String, handler: (Request) => Response): RestEndpointBuilder = {
-    routes += (path -> handler)
-    this
+  def put(key:String, impl:EndpointDefinition) = {
+    endpoints = endpoints + (key -> impl)
   }
 }
 
-case class Request(path:String, headers:Map[String, Any], body:Any)
-case class Response(headers:Map[String, Any], body:Any)
+private class RestEndpointBuilderImpl(val service:ActorRef) extends RestEndpointBuilder {
+  private var hostDefinition = new Host("localhost", 8080)
+  private var modules:Seq[Module] = Seq()
 
-case class Method(method:String) {
-  val GET = Method("GET")
-  val POST = Method("POST")
-  val PUT = Method("PUT")
-  val DELETE = Method("DELETE")
+  override def listen(host:String, port:Int): RestEndpointBuilder = {
+    hostDefinition = new Host(host, port)
+    this
+  }
+
+  override def registerEndpoint(module:Module):RestEndpointBuilder = {
+    modules = modules ++ Seq(module)
+    this
+  }
+
+  override def build(): EndpointDefinition = {
+    new EndpointDefinition(hostDefinition, service, modules)
+  }
+}
+
+case class Host(host:String, port:Int) {
+  override def toString: String = s"${host}:${port}"
+}
+
+case class EndpointDefinition(hostDef:Host, service:ActorRef, modules:Seq[Module])
+
+trait SetupRestEndpoint extends (RestEndpointBuilder=>ActorRef) {
+  def apply(builder:RestEndpointBuilder):ActorRef
+}
+
+object SetupRestEndpoint {
+  def apply(m:(RestEndpointBuilder)=>EndpointDefinition)(implicit system:ActorSystem):SetupRestEndpoint = new SetupRestEndpoint {
+    override def apply(builder: RestEndpointBuilder): ActorRef = {
+      val definition = m(builder)
+      EndpointDefinitionHolder.getOrElse(definition.hostDef.toString, definition)
+      val handler = system.actorOf(Props(classOf[RestHandler]))
+      handler ! definition
+
+      IO(Http) ! Http.Bind(handler, definition.hostDef.host, definition.hostDef.port)
+
+      handler
+    }
+  }
 }

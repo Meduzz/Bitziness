@@ -104,7 +104,6 @@ object ExchangeTypes {
 }
 
 trait SetupAmqpEndpoint extends (AmqpBuilder=>AmqpSettings) {
-  def apply() = this
   def apply(builder:AmqpBuilder, k:(AmqpSettings)=>ActorRef):Tuple2[ActorRef, AmqpSettings]
 }
 
