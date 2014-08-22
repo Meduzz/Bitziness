@@ -1,9 +1,33 @@
 package se.chimps.bitziness.core.generic
 
-import akka.actor.ActorRef
+import akka.actor.{Actor, ActorRef}
 import akka.event.{SubchannelClassification, EventBus}
 import akka.util.Subclassification
 import se.chimps.bitziness.core.generic
+
+
+trait Events { master:Actor =>
+  val eventStream = EventStreamImpl()
+
+  def publish[T<:Event](event:T) = {
+    eventStream.publish(event)
+  }
+
+  val internalEventsBuilder:Builder = new Builder {
+    override def subscribe[T <: Event](event:Class[T]):Unit = {
+      eventStream.subscribe(self, event)
+    }
+
+    override def unsubscribe[T <: Event](event:Class[T]):Unit = {
+      eventStream.unsubscribe(self, event)
+    }
+  }
+}
+
+trait Builder {
+  def subscribe[T<:Event](event:Class[T])
+  def unsubscribe[T<:Event](event:Class[T])
+}
 
 /**
  * Base trait for internal events.
