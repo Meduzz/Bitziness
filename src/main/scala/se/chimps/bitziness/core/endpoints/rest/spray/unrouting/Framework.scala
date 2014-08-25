@@ -33,7 +33,8 @@ object Framework {
         case HttpMethods.DELETE => findMatch(module.deletes, uri)
       }
 
-      action.getOrElse(fourZeroFour(uri))(new RequestImpl(req)).toResponse()
+      val theAction = action.getOrElse(fourZeroFour(uri))
+      theAction(new RequestImpl(req, theAction.meta)).toResponse()
     }
 
     private def findMatch(actions:List[Action], path:String):Option[Action] = {

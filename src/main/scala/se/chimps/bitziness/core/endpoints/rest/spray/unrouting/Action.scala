@@ -15,8 +15,8 @@ object Action {
     private[unrouting] def metadata():ActionMetadata = {
       val findPathParamsRegex = ":([a-zA-Z0-9]+)".r
       val pathParamsRegex = "(:[a-zA-Z0-9]+)".r
-      val pathNames = findPathParamsRegex.findAllIn(uri).toList
-      val pathRegex = s"^${pathParamsRegex.replaceAllIn(uri, "([a-zA-Z0-9]+)")}${"$"}".r
+      val pathNames = findPathParamsRegex.findAllIn(uri).map(m => m.substring(1)).toList
+      val pathRegex = s"${pathParamsRegex.replaceAllIn(uri, "([a-zA-Z0-9]+)")}".r
 
       new ActionMetadata(pathRegex, pathNames)
     }

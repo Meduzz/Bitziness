@@ -20,9 +20,12 @@ class ControllerTest extends FunSuite with TestKitBase {
     assertResponse(404, "Nobody home at /spam.", controller.request(get("/spam")), "Expected a 404...")
     assertResponse(200, "asdf", controller.request(post("/gringo", "asdf")))
     assertResponse(200, "They are all here!", controller.request(get("/a/b/c/d")), "No one home at /a/b/c/d")
-    assertResponse(200, "q/q", controller.request(get("/q/q")), "First should be returned when multiple actions match.")
+    assertResponse(200, "q/q", controller.request(get("/q/q")), "First match should be returned when multiple actions match.")
     assertResponse(404, "Nobody home at /q/:q.", controller.request(get("/q/:q")), "Regexes are not valid paths.")
-//    assertResponse(200, "spam", controller.request(get("/test/spam")), "PathParams did not work as expected.") // TODO left to implement
+    assertResponse(200, "spam", controller.request(get("/test/spam")), "PathParams did not work as expected.")
+    assertResponse(200, "Hello a and b!", controller.request(get("/hello/a/and/b")), "A more complicated path failed.")
+    assertResponse(200, "Your id #300.", controller.request(post("/form/400", "id=300").withHeaders(HttpHeaders.`Content-Type`(ContentType(MediaType.custom("application/x-www-form-urlencoded"))))))
+    assertResponse(200, "Your id #400.", controller.request(post("/form/400", "{text:1}").withHeaders(HttpHeaders.`Content-Type`(ContentType(MediaType.custom("application/json"))))))
   }
 
   def request(method:HttpMethod, uri:String, body:Option[String]):HttpRequest = {
@@ -63,6 +66,15 @@ class MyController extends Controller {
     get(Action("/test/:test") { req =>
       val test = req.params("test").getOrElse("fail!")
       Ok().withEntity(test).build()
+    })
+    get(Action("/hello/:a/and/:b") { req =>
+      val a = req.params("a").getOrElse("fail")
+      val b = req.params("b").getOrElse("fail")
+      Ok().withEntity(s"Hello ${a} and ${b}!").build()
+    })
+    post(Action("/form/:id") { req =>
+      val id = req.params("id").getOrElse("fail")
+      Ok().withEntity(s"Your id #${id}.").build()
     })
   }
 

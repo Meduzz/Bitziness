@@ -1,7 +1,9 @@
 package se.chimps.bitziness.core.endpoints.rest.spray.unrouting
 
+import java.net.URLDecoder
+
 import spray.http.HttpHeaders.RawHeader
-import spray.http.{HttpResponse, HttpEntity, HttpHeader, HttpRequest}
+import spray.http._
 
 object Model {
 
@@ -15,7 +17,39 @@ object Model {
     def entity[T](implicit conv:(Array[Byte])=>Option[T]):Option[T]
   }
 
-  case class RequestImpl(request:HttpRequest) extends Request {
+  case class RequestImpl(request:HttpRequest, meta:ActionMetadata) extends Request {
+
+    def createParms():Map[String, String] = {
+      val uri = request.uri.path.toString()
+      val matches = meta.regex.pattern.matcher(uri)
+
+      val parms:Map[String, String] = if (matches.matches()) {
+        val i = 0 to matches.groupCount()
+        val k = i.map(b => matches.group(b))
+        meta.keyNames.zip(k.tail).toMap[String, String]
+      } else {
+        Map()
+      }
+
+      var post = Map[String, String]()
+
+      if (request.method.isEntityAccepted && request.headers.
+        exists(h => h.value.equals("application/x-www-form-urlencoded"))) {
+
+        val regex = "([a-zA-Z0-9]+)=([a-zA-Z0-9]+)".r
+        val decoded = URLDecoder.decode(request.entity.asString(HttpCharsets.`UTF-8`), HttpCharsets.`UTF-8`.value)
+        val split = decoded.split("&").filter(split => split.matches(regex.regex))
+
+        split.foreach(kv => {
+          val matches = regex.findAllIn(kv)
+          matches.next()
+          post = post ++ Map(matches.group(1) -> matches.group(2))
+        })
+      }
+      parms ++ post
+    }
+
+    private val parms:Map[String, String] = createParms()
 
     override def method:String = request.method.name
 
@@ -28,8 +62,9 @@ object Model {
       case _ => None
     }
 
-    override def params(key:String):Option[String] = None
+    override def params(key:String):Option[String] = parms.get(key)
 
+    // TODO create a session store.
     override def session(key:String):Option[String] = None
 
     override def cookie(key:String):Option[String] = None
