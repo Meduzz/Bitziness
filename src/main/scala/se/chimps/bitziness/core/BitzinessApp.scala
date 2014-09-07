@@ -17,13 +17,13 @@ trait Bitziness {
 
   def initialize(args:Array[String]):Unit
 
-  def initService[T>:Service](service:Class[T], name:String):ActorRef = {
+  def initService[T<:Service](service:Class[T], name:String):ActorRef = {
     val actor = system.actorOf(Props(service), name)
     actor ! Init
     actor
   }
 
-  def initService[T>:Service](service:Class[T], name:String, args:Seq[Any]):ActorRef = {
+  def initService[T<:Service](service:Class[T], name:String, args:Seq[Any]):ActorRef = {
     val actor = system.actorOf(Props(service, args), name)
     actor ! Init
     actor

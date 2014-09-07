@@ -70,33 +70,39 @@ object Model {
     override def cookie(key:String):Option[String] = None
   }
 
-  case class Response(code:Int, entity:Option[Array[Byte]], headers:Map[String, String]) {
+  case class Response(code:Int, entity:Option[Entity], headers:Map[String, String]) {
     val data = entity match {
-      case Some(bytes) => Some(HttpEntity(bytes))
+      case Some(entity) => Some(HttpEntity(ContentType(MediaType.custom(entity.contentType)), entity.data))
       case None => None
     }
 
-    val heads = headers.map(kv => RawHeader(kv._1, kv._2)).toList
+    val heads = headers.map(kv => (kv._1.toLowerCase() -> kv._2)).map {
+      case ("content-type", x:String) => HttpHeaders.`Content-Type`(ContentType(MediaType.custom(x)))
+      case (k:String, v:String) => RawHeader(k, v)
+    }.toList
 
-    private[unrouting] def toResponse():HttpResponse = HttpResponse(code, data, heads)
+    private[rest] def toResponse():HttpResponse = HttpResponse(code, data, heads)
   }
 
   trait ResponseBuilder {
-    def withEntity[T](entity:T)(implicit conv:(T)=>Option[Array[Byte]]):ResponseBuilder
+    def withEntity[T](entity:T, contentType:String = "text/html", charSet:String = "utf-8")(implicit conv:(T)=>Array[Byte]):ResponseBuilder
     def header(key:String, value:String):ResponseBuilder
     def build():Response
   }
 
   class ResponseBuilderImpl(val code:Int = 200, val msg:Option[String] = None, val error:Option[Throwable] = None) extends ResponseBuilder {
-    private var entity:Option[Array[Byte]] = error match {
+    private var entity:Option[Entity] = error match {
       // TODO make this a setting, cause we dont want exceptions in production.
-      case Some(e) => Some(s"<h1>${msg.getOrElse(e.getMessage)}</h1><p>${e.getStackTrace.mkString("</p><p>")}</p>".getBytes("utf-8"))
-      case None => None
+      case Some(e) => Some(new Entity(s"<h1>An error occurred at ${msg.getOrElse(e.getMessage)}</h1><p>${e.getStackTrace.mkString("</p><p>")}</p>".getBytes("utf-8"), "text/html", "utf-8"))
+      case None => msg match {
+        case Some(text) => Some(new Entity(text.getBytes("utf-8"), "text/html", "utf-8"))
+        case None => None
+      }
     }
     private var headers:Map[String, String] = Map()
 
-    override def withEntity[T](data:T)(implicit conv:(T)=>Option[Array[Byte]]):ResponseBuilder = {
-      entity = conv(data)
+    override def withEntity[T](data:T, contentType:String = "text/html", charSet:String = "utf-8")(implicit conv:(T)=>Array[Byte]):ResponseBuilder = {
+      entity = Some(new Entity(conv(data), contentType, charSet))
       this
     }
 
@@ -107,6 +113,8 @@ object Model {
 
     override def build():Response = new Response(code, entity, headers)
   }
+
+  case class Entity(data:Array[Byte], contentType:String, charSet:String)
 
   object Responses {
 

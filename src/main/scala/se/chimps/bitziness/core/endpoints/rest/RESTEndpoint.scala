@@ -4,7 +4,7 @@ import _root_.spray.can.Http
 import akka.actor.{Actor, Props, ActorSystem, ActorRef}
 import akka.io.IO
 import se.chimps.bitziness.core.Endpoint
-import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.Controller
+import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.{Controller}
 
 /**
  * Main trait for RESTful endpoints.
@@ -21,7 +21,7 @@ trait RESTEndpoint extends Actor with Endpoint {
  */
 sealed trait RestEndpointBuilder {
   def listen(host:String, port:Int):RestEndpointBuilder
-  def registerController(module:Controller):RestEndpointBuilder
+  def mountController(path:String, module:Controller):RestEndpointBuilder
   def build():EndpointDefinition
 }
 
@@ -43,15 +43,16 @@ object EndpointDefinitionHolder {
 
 private class RestEndpointBuilderImpl(val service:ActorRef) extends RestEndpointBuilder {
   private var hostDefinition = new Host("localhost", 8080)
-  private var modules:Seq[Controller] = Seq()
+  private var modules:Map[String, Controller] = Map()
 
   override def listen(host:String, port:Int): RestEndpointBuilder = {
     hostDefinition = new Host(host, port)
     this
   }
 
-  override def registerController(module:Controller):RestEndpointBuilder = {
-    modules = modules ++ Seq(module)
+  override def mountController(path:String, module:Controller):RestEndpointBuilder = {
+    modules = modules ++ Map(path -> module)
+    module(service)
     this
   }
 
@@ -64,7 +65,7 @@ case class Host(host:String, port:Int) {
   override def toString: String = s"${host}:${port}"
 }
 
-case class EndpointDefinition(hostDef:Host, service:ActorRef, modules:Seq[Controller])
+case class EndpointDefinition(host:Host, service:ActorRef, modules:Map[String, Controller])
 
 trait SetupRestEndpoint extends (RestEndpointBuilder=>ActorRef) {
   def apply(builder:RestEndpointBuilder):ActorRef
@@ -74,11 +75,10 @@ object SetupRestEndpoint {
   def apply(m:(RestEndpointBuilder)=>EndpointDefinition)(implicit system:ActorSystem):SetupRestEndpoint = new SetupRestEndpoint {
     override def apply(builder: RestEndpointBuilder): ActorRef = {
       val definition = m(builder)
-      EndpointDefinitionHolder.getOrElse(definition.hostDef.toString, definition)
-      val handler = system.actorOf(Props(classOf[RestHandler]))
-      handler ! definition
+      EndpointDefinitionHolder.getOrElse(definition.host.toString, definition)
+      val handler = system.actorOf(Props(classOf[RestHandler], definition))
 
-      IO(Http) ! Http.Bind(handler, definition.hostDef.host, definition.hostDef.port)
+      IO(Http) ! Http.Bind(handler, definition.host.host, definition.host.port)
 
       handler
     }

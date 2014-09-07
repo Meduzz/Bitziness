@@ -6,4 +6,8 @@ class MetricsService extends Service {
   override def handle:Receive = {
     case _ =>
   }
+
+  override def initialize():Unit = {
+
+  }
 }
