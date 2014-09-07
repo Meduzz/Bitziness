@@ -35,7 +35,7 @@ class PingController extends Controller {
       Ok().build()
     })
     get("/hello/:world", Action { req =>
-      Ok().withEntity(s"Hello ${req.params("world")}!").build()
+      Ok().withEntity(s"Hello ${req.params("world").getOrElse("failed")}!").build()
     })
   }
 
