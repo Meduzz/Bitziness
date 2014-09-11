@@ -1,6 +1,8 @@
 package se.chimps.bitziness.core.endpoints.rest.spray.unrouting
 
 import java.net.URLDecoder
+import java.text.SimpleDateFormat
+import java.util.Date
 
 import spray.http.HttpHeaders.RawHeader
 import spray.http._
@@ -78,6 +80,11 @@ object Model {
 
     val heads = headers.map(kv => (kv._1.toLowerCase() -> kv._2)).map {
       case ("content-type", x:String) => HttpHeaders.`Content-Type`(ContentType(MediaType.custom(x)))
+      case ("content-length", x:String) => HttpHeaders.`Content-Length`(x.toLong)
+      case ("transfer-encoding", x:String) => HttpHeaders.`Transfer-Encoding`(x)
+      case ("date", x:String) => HttpHeaders.Date(x.toDate)
+      case ("server", x:String) => HttpHeaders.Server(x)
+      case ("connection", x:String) => HttpHeaders.Connection(x)
       case (k:String, v:String) => RawHeader(k, v)
     }.toList
 
@@ -164,6 +171,16 @@ object Model {
       def apply(uri:String):ResponseBuilder = {
         new ResponseBuilderImpl(301, Some(uri))
       }
+    }
+  }
+
+  implicit def str2Date(in:String):Str2Date = {
+    new Str2Date(in)
+  }
+
+  class Str2Date(val str:String) {
+    def toDate:DateTime = {
+      DateTime.fromIsoDateTimeString(str).getOrElse(DateTime.now) // FUGLY, needs to be remade rather asap...
     }
   }
 }
