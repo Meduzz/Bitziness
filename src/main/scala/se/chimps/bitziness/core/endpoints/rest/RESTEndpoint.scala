@@ -9,7 +9,7 @@ import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.{Contro
 /**
  * Main trait for RESTful endpoints.
  */
-trait RESTEndpoint extends Actor with Endpoint {
+trait RESTEndpoint extends Endpoint {
 
   def configureRestEndpoint(builder:RestEndpointBuilder):EndpointDefinition
 
