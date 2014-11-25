@@ -1,41 +1,64 @@
 package se.chimps.bitziness.core.endpoints.amqp
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor._
 import io.github.drexin.akka.amqp.AMQP
 import io.github.drexin.akka.amqp.AMQP._
 import se.chimps.bitziness.core.Endpoint
 import akka.io.IO
-import akka.pattern.ask
-
-import scala.concurrent.Await
 
 /**
  * Base trait for consuming and producing AMQP messages.
  */
-trait AmqpEndpoint extends Actor with Endpoint { service:Endpoint =>
-
-  private val amqpExtension = IO(AMQP)(context.system)
-  
-  protected val (amqpConnection:ActorRef, amqpSetting:AmqpSettings):Tuple2[ActorRef, AmqpSettings] = SetupAmqpEndpoint(setupAmqpEndpoint)(new AmqpBuilderImpl(amqpExtension), settings => {
-    import scala.concurrent.duration._
-    import akka.util.Timeout
-
-    val deluxe = 5.seconds
-    implicit val timeout:Timeout = Timeout(deluxe)
-
-    val Connected(_, con:ActorRef) = Await.result((amqpExtension ? Connect(settings.uri)).mapTo[Connected], deluxe)
-
-    con
-  })
-
-  private def amqp:Receive = {
-    case ExchangeDeclared => amqpSetting.queues.foreach(cmd => amqpConnection ! cmd)
-    case QueueDeclared => amqpSetting.binds.foreach(cmd => amqpConnection ! cmd)
-    case QueueBound => amqpSetting.subscribes.foreach(cmd => amqpConnection ! cmd)
-    case Connected => amqpSetting.exchanges.foreach(cmd => amqpConnection ! cmd)
-  }
+trait AmqpEndpoint extends Endpoint {
 
   protected def setupAmqpEndpoint(builder:AmqpBuilder):AmqpSettings
+
+  protected val (settings:AmqpSettings, connection:ActorRef) = SetupAmqpEndpoint(setupAmqpEndpoint)(new AmqpBuilderImpl, self)(context.system)
+
+}
+
+class OuterAmqpEndpoint(val settings:AmqpSettings, val endpoint:ActorRef) extends Actor with Stash with ActorLogging {
+
+  var connection: ActorRef = _
+
+  override def receive: Receive = {
+    case Connected(_, con: ActorRef) => {
+      connection = con
+      settings.exchanges.foreach(cmd => {
+        log.debug("DeclareExchange: {}", cmd)
+        con ! cmd
+      })
+      settings.queues.foreach(cmd => {
+        log.debug("DeclareQueue: {}", cmd)
+        connection ! cmd
+      })
+    }
+    case ExchangeDeclared(exchange:String) => log.debug("ExchangeDeclared: {}", exchange)
+    case QueueDeclared(queue: String) =>
+      log.debug("QueueDeclared: {}", queue)
+      settings.binds.filter(c => c.asInstanceOf[BindQueue].queue.equals(queue)).foreach(cmd => {
+        log.debug("Bind: {}", cmd)
+        connection ! cmd
+      })
+    case QueueBound(queue: String, _, _) =>
+      log.debug("QueueBound: {}", queue)
+      settings.subscribes.filter(c => c.asInstanceOf[Subscribe].queue.equals(queue)).foreach(cmd => {
+        log.debug("Subscribe: {}", cmd)
+        connection ! cmd
+      })
+      unstashAll()
+    case p: Publish =>
+      log.debug("Publish: {}", p)
+      if (connection != null) {
+        connection ! p
+      } else {
+        stash()
+      }
+    case d: Delivery => {
+      log.debug("Delivery: {}", d)
+      endpoint ! d
+    }
+  }
 }
 
 trait AmqpBuilder {
@@ -47,7 +70,7 @@ trait AmqpBuilder {
   def build():AmqpSettings
 }
 
-private class AmqpBuilderImpl(val endpoint:ActorRef) extends AmqpBuilder {
+private class AmqpBuilderImpl extends AmqpBuilder {
   private var uri:String = _
   private var exchanges:Seq[DeclareExchange] = Seq()
   private var queues:Seq[DeclareQueue] = Seq()
@@ -59,22 +82,22 @@ private class AmqpBuilderImpl(val endpoint:ActorRef) extends AmqpBuilder {
     this
   }
 
-  override def declareExchange(name: String, exchangeType: String, durable: Boolean, autodelete: Boolean, internal: Boolean, props: Map[String, AnyRef]): AmqpBuilder = {
+  override def declareExchange(name:String, exchangeType:String = ExchangeTypes.DIRECT, durable:Boolean = true, autodelete:Boolean = false, internal:Boolean = false, props:Map[String, AnyRef] = Map()): AmqpBuilder = {
     exchanges = exchanges ++ Seq(new DeclareExchange(name, exchangeType, durable, autodelete, internal, props))
     this
   }
 
-  override def declareQueue(name: String, durable: Boolean, exclusive: Boolean, autodelete: Boolean, props: Map[String, AnyRef]): AmqpBuilder = {
+  override def declareQueue(name:String, durable:Boolean = true, exclusive:Boolean = false, autodelete:Boolean = false, props:Map[String, AnyRef] = Map()): AmqpBuilder = {
     queues = queues ++ Seq(new DeclareQueue(name, durable, exclusive, autodelete, props))
     this
   }
 
-  override def bind(exchange: String, queue: String, routingKey: String, props: Map[String, AnyRef]): AmqpBuilder = {
-    binds = binds ++ Seq(new BindQueue(exchange, queue, routingKey, props))
+  override def bind(exchange:String, queue:String, routingKey:String, props:Map[String, AnyRef] = Map()): AmqpBuilder = {
+    binds = binds ++ Seq(new BindQueue(queue, exchange, routingKey, props))
     this
   }
 
-  override def subscribe(queueName:String, autoack:Boolean):AmqpBuilder = {
+  override def subscribe(queueName:String, autoack:Boolean = true):AmqpBuilder = {
     subscribes = subscribes ++ Seq(new Subscribe(queueName, autoack))
     this
   }
@@ -93,19 +116,29 @@ object ExchangeTypes {
   val HEADERS = "headers"
 }
 
-trait SetupAmqpEndpoint extends (AmqpBuilder=>AmqpSettings) {
-  def apply(builder:AmqpBuilder, k:(AmqpSettings)=>ActorRef):Tuple2[ActorRef, AmqpSettings]
+trait SetupAmqpEndpoint {
+  def apply(builder:AmqpBuilder, service:ActorRef)(implicit system:ActorSystem):Tuple2[AmqpSettings, ActorRef]
 }
 
 object SetupAmqpEndpoint {
-  def apply(m:AmqpBuilder=>AmqpSettings):SetupAmqpEndpoint = new SetupAmqpEndpoint {
-    override def apply(builder:AmqpBuilder):AmqpSettings = {
-      m(builder)
-    }
 
-    override def apply(builder:AmqpBuilder, k:(AmqpSettings) => ActorRef):Tuple2[ActorRef, AmqpSettings] = {
+  def apply(m:AmqpBuilder=>AmqpSettings):SetupAmqpEndpoint = new SetupAmqpEndpoint {
+
+    override def apply(builder: AmqpBuilder, service:ActorRef)(implicit system:ActorSystem):Tuple2[AmqpSettings, ActorRef] = {
+      val amqpExtension = IO(AMQP)
       val settings = m(builder)
-      Tuple2(k(settings), settings)
+      val outerEndpoint = system.actorOf(Props(classOf[OuterAmqpEndpoint], settings, service), distinct(settings.uri))
+      amqpExtension.tell(Connect(settings.uri), outerEndpoint)
+      Tuple2(settings, outerEndpoint)
+    }
+  }
+
+  private def distinct(uri:String):String = {
+    val s = uri.drop(7)
+    if (s.contains("@")) {
+      return s.dropWhile(c => !c.equals("@".charAt(0))).drop(1)
+    } else {
+      return s
     }
   }
 }

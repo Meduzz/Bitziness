@@ -1,6 +1,5 @@
 package se.chimps.bitziness.core.project.modules.metrics.service
 
-import akka.actor.Actor.Receive
 import se.chimps.bitziness.core.endpoints.rest.{EndpointDefinition, RestEndpointBuilder, RESTEndpoint}
 
 /**

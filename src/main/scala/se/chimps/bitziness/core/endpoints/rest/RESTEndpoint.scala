@@ -3,7 +3,7 @@ package se.chimps.bitziness.core.endpoints.rest
 import _root_.spray.can.Http
 import akka.actor.{Actor, Props, ActorSystem, ActorRef}
 import akka.io.IO
-import se.chimps.bitziness.core.Endpoint
+import se.chimps.bitziness.core.{Host, Endpoint}
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.{Controller}
 
 /**
@@ -59,10 +59,6 @@ private class RestEndpointBuilderImpl(val service:ActorRef) extends RestEndpoint
   override def build(): EndpointDefinition = {
     new EndpointDefinition(hostDefinition, service, modules)
   }
-}
-
-case class Host(host:String, port:Int) {
-  override def toString: String = s"${host}:${port}"
 }
 
 case class EndpointDefinition(host:Host, service:ActorRef, modules:Map[String, Controller])

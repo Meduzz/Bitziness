@@ -24,7 +24,7 @@ class PingEndpoint extends RESTEndpoint {
     builder.build()
   }
 
-  override def receive:Actor.Receive = {
+  override def receive:Receive = {
     case _ => println("Ping")
   }
 }

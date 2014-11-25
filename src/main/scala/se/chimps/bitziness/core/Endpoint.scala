@@ -1,10 +1,10 @@
 package se.chimps.bitziness.core
 
-import akka.actor.{ActorRef, Actor}
+import akka.actor.Actor
 
 trait Endpoint extends Actor {
 }
 
-abstract class AbstractEndpoint(val service:ActorRef) extends Endpoint {
-
+case class Host(host:String, port:Int) {
+  override def toString: String = s"${host}:${port}"
 }
