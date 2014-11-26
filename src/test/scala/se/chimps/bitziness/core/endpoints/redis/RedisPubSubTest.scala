@@ -17,7 +17,7 @@ class RedisPubSubTest extends FunSuite with TestKitBase with BeforeAndAfterAll {
 
 
 
-  test("the happy case is happy") {
+  test("the happy case is happy", Redis) {
 
     Thread.sleep(200L)
 
