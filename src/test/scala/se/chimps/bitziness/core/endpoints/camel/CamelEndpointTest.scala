@@ -2,7 +2,7 @@ package se.chimps.bitziness.core.endpoints.camel
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{Props, ActorSystem}
+import akka.actor.{ActorRef, Props, ActorSystem}
 import akka.camel.{CamelExtension, CamelMessage}
 import akka.testkit.{TestProbe, TestKitBase}
 import akka.util.Timeout
@@ -22,8 +22,8 @@ class CamelEndpointTest extends FunSuite with TestKitBase with BeforeAndAfterAll
 
   val probe = TestProbe()
 
-  val consumer = system.actorOf(Props(classOf[MyConsumer]))
-  val producer = system.actorOf(Props(classOf[MyProducer]))
+  val consumer = system.actorOf(Props(classOf[MyConsumer], probe.ref))
+  val producer = system.actorOf(Props(classOf[MyProducer], probe.ref))
 
   test("the happy case is happy, camel version") {
 
@@ -45,7 +45,7 @@ class CamelEndpointTest extends FunSuite with TestKitBase with BeforeAndAfterAll
   }
 }
 
-class MyConsumer extends CamelConsumerEndpoint {
+class MyConsumer(val service:ActorRef) extends CamelConsumerEndpoint {
   override def endpointUri: String = "direct:test"
 
   override def receive: Receive = {
@@ -53,6 +53,6 @@ class MyConsumer extends CamelConsumerEndpoint {
   }
 }
 
-class MyProducer extends CamelProducerEndpoint {
+class MyProducer(val service:ActorRef) extends CamelProducerEndpoint {
   override def endpointUri: String = "direct:test"
 }

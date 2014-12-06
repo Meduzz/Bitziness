@@ -3,6 +3,8 @@ package se.chimps.bitziness.core
 import akka.actor.{Props, Actor, ActorRef}
 import se.chimps.bitziness.core.generic.{ReceiveChain, HasFeature, Init}
 
+import scala.reflect.ClassTag
+
 abstract class Service extends Actor with HasFeature with ReceiveChain {
   def handle:Receive
 
@@ -17,8 +19,12 @@ abstract class Service extends Actor with HasFeature with ReceiveChain {
 
   def initialize():Unit
 
-  def initEndpoint[T<:Endpoint](endpoint:Class[T], name:String, args:Any*):ActorRef = {
-    context.system.actorOf(Props(endpoint, args), name)
+  def initEndpoint[T<:Endpoint](endpoint:Class[T], name:String):ActorRef = {
+    context.system.actorOf(Props(endpoint, self), name)
+  }
+
+  def initEndpoint[T<:Endpoint](endpoint:T, name:String)(implicit evidence:ClassTag[T]):ActorRef = {
+    context.system.actorOf(Props(endpoint), name)
   }
 }
 

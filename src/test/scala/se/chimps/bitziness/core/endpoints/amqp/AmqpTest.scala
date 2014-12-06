@@ -32,7 +32,7 @@ class AmqpTest extends FunSuite with TestKitBase with BeforeAndAfterAll {
 
 object AMQP extends Tag("Depends on a running rabbitmq")
 
-class MyService(service:ActorRef, exchange:String, queue:String, routing:String) extends AmqpEndpoint with ActorLogging {
+class MyService(val service:ActorRef, exchange:String, queue:String, routing:String) extends AmqpEndpoint with ActorLogging {
 
   override protected def setupAmqpEndpoint(builder: AmqpBuilder): AmqpSettings = {
     builder.connect("amqp://localhost:5672")
