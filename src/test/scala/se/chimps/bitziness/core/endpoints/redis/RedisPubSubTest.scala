@@ -15,8 +15,6 @@ class RedisPubSubTest extends FunSuite with TestKitBase with BeforeAndAfterAll {
   val probe = TestProbe()
   val endpoint = system.actorOf(Props(classOf[MyService], probe.ref))
 
-
-
   test("the happy case is happy", Redis) {
 
     Thread.sleep(200L)

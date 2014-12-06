@@ -1,6 +1,6 @@
 name := "Bitziness"
 
-version := "0.2-SNAPSHOT"
+version := "0.3-SNAPSHOT"
 
 scalaVersion := "2.11.1"
 
@@ -8,15 +8,15 @@ resolvers += "spray repo" at "http://repo.spray.io"
 
 resolvers += "rediscala" at "http://dl.bintray.com/etaty/maven"
 
-libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.3.3"
+libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.3.7"
 
-libraryDependencies += "com.typesafe.akka" %% "akka-camel" % "2.3.3"
+libraryDependencies += "com.typesafe.akka" %% "akka-camel" % "2.3.7"
 
-libraryDependencies += "com.typesafe.akka" %% "akka-cluster" % "2.3.3"
+libraryDependencies += "com.typesafe.akka" %% "akka-cluster" % "2.3.7"
 
-libraryDependencies += "com.typesafe.akka" %% "akka-agent" % "2.3.3"
+libraryDependencies += "com.typesafe.akka" %% "akka-agent" % "2.3.7"
 
-libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % "2.3.3" % "test"
+libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % "2.3.7" % "test"
 
 libraryDependencies += "com.rabbitmq" % "amqp-client" % "3.2.2"
 
