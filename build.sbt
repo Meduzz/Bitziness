@@ -25,3 +25,5 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.0" % "test"
 libraryDependencies += "io.spray" % "spray-can_2.11" % "1.3.1"
 
 libraryDependencies += "com.etaty.rediscala" %% "rediscala" % "1.4.0"
+
+libraryDependencies += "org.json4s" %% "json4s-native" % "3.2.10"
