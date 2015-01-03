@@ -1,8 +1,6 @@
 package se.chimps.bitziness.core.endpoints.rest.spray.unrouting
 
 import java.net.URLDecoder
-import java.text.SimpleDateFormat
-import java.util.Date
 
 import spray.http.HttpHeaders.RawHeader
 import spray.http._
