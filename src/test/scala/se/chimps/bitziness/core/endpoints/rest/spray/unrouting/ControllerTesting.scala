@@ -6,7 +6,8 @@ import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.Responses.{
 import spray.http._
 
 /**
- * A smallish trait to hel controllertesting.
+ * A smallish trait to help test controllers.
+ * TODO make this avaailable in "core" for other projects to use.
  */
 trait ControllerTesting extends Engine {
   def controller:Controller
