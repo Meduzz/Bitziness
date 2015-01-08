@@ -72,7 +72,8 @@ object Model {
 
   case class Response(code:Int, entity:Option[Entity], headers:Map[String, String]) {
     val data = entity match {
-      case Some(entity) => Some(HttpEntity(ContentType(MediaType.custom(entity.contentType)), entity.data))
+      case Some(BodyEntity(data, contentType)) => Some(HttpEntity(ContentType(MediaType.custom(contentType)), data))
+      case Some(FileEntity(fileName, contentType)) => Some(HttpEntity(ContentType(MediaType.custom(contentType)), HttpData.fromFile(fileName)))
       case None => None
     }
 
@@ -90,7 +91,8 @@ object Model {
   }
 
   trait ResponseBuilder {
-    def withEntity[T](entity:T, contentType:String = "text/html", charSet:String = "utf-8")(implicit conv:(T)=>Array[Byte]):ResponseBuilder
+    def withEntity[T](entity:T, contentType:String = "text/html")(implicit conv:(T)=>Array[Byte]):ResponseBuilder
+    def sendFile(file:String, contentType:String):ResponseBuilder
     def header(key:String, value:String):ResponseBuilder
     def build():Response
   }
@@ -98,16 +100,17 @@ object Model {
   class ResponseBuilderImpl(val code:Int = 200, val msg:Option[String] = None, val error:Option[Throwable] = None) extends ResponseBuilder {
     private var entity:Option[Entity] = error match {
       // TODO make this a setting, cause we dont want exceptions in production.
-      case Some(e) => Some(new Entity(s"<h1>An error occurred at ${msg.getOrElse(e.getMessage)}</h1><p>${e.getStackTrace.mkString("</p><p>")}</p>".getBytes("utf-8"), "text/html", "utf-8"))
+      case Some(e) => Some(new BodyEntity(s"<h1>An error occurred at ${msg.getOrElse(e.getMessage)}</h1><p>${e.getStackTrace.mkString("</p><p>")}</p>".getBytes("utf-8"), "text/html"))
       case None => msg match {
-        case Some(text) => Some(new Entity(text.getBytes("utf-8"), "text/html", "utf-8"))
+        case Some(text) => Some(new BodyEntity(text.getBytes("utf-8"), "text/html"))
         case None => None
       }
     }
+
     private var headers:Map[String, String] = Map()
 
-    override def withEntity[T](data:T, contentType:String = "text/html", charSet:String = "utf-8")(implicit conv:(T)=>Array[Byte]):ResponseBuilder = {
-      entity = Some(new Entity(conv(data), contentType, charSet))
+    override def withEntity[T](data:T, contentType:String = "text/html")(implicit conv:(T)=>Array[Byte]):ResponseBuilder = {
+      entity = Some(new BodyEntity(conv(data), contentType))
       this
     }
 
@@ -116,10 +119,17 @@ object Model {
       this
     }
 
+    override def sendFile(file:String, contentType:String):ResponseBuilder = {
+      entity = Some(new FileEntity(file, contentType))
+      this
+    }
+
     override def build():Response = new Response(code, entity, headers)
   }
 
-  case class Entity(data:Array[Byte], contentType:String, charSet:String)
+  sealed trait Entity {}
+  case class BodyEntity(data:Array[Byte], contentType:String) extends Entity
+  case class FileEntity(fileName:String, contentType:String) extends Entity
 
   object Responses {
 

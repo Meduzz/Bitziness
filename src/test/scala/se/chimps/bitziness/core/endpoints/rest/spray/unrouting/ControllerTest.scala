@@ -26,8 +26,10 @@ class ControllerTest extends FunSuite with TestKitBase with ControllerTesting {
     assertResponse(200, "Hello a and b!", request(get("/hello/a/and/b")), "A more complicated path failed.")
     assertResponse(200, "Your id #300.", request(post("/form/400", "id=300").withHeaders(HttpHeaders.`Content-Type`(ContentType(MediaType.custom("application/x-www-form-urlencoded"))))))
     assertResponse(200, "Your id #400.", request(post("/form/400", "{text:1}").withHeaders(HttpHeaders.`Content-Type`(ContentType(MediaType.custom("application/json"))))))
-    assertResponse(500, "<h1>An error occurred at", request(get("/crash")), "The crash, should crash successfully.")
     assertResponse(200, null, request(get("/headers")), "Headers blew up.")
+    assertResponse(200, "* {color:#AAA;}", request(get("/file")))
+    assertResponse(200, "file.ending", request(get("/static/file.ending")))
+    assertResponse(500, "<h1>An error occurred at", request(get("/crash")), "The crash, should crash successfully.")
   }
 
 }
@@ -56,6 +58,8 @@ class MyController extends Controller {
     })
     get("/crash", Action(() => throw new RuntimeException("TBD")))
     get("/headers", Action(() => Ok().header("Date", "2014-01-01T00:00:00").header("Server", "spam").header("Connection", "ok").build()))
+    get("/file", Action(() => Ok().sendFile(getClass.getResource("/static.css").getPath, "text/stylesheet").build()))
+    get("/static/:file.:ending", Action(req => Ok().withEntity(s"${req.params("file").get}.${req.params("ending").get}").build()))
   }
 
   implicit def str2Bytes(str:String):Array[Byte] = str.getBytes("utf-8")
