@@ -177,7 +177,13 @@ object Model {
 
     object Redirect {
       def apply(uri:String):ResponseBuilder = {
-        new ResponseBuilderImpl(301, Some(uri))
+        new ResponseBuilderImpl(301, Some(uri)).header("Location", uri)
+      }
+    }
+
+    object TODO {
+      def apply():ResponseBuilder = {
+        new ResponseBuilderImpl(501, Some("TODO"))
       }
     }
   }
