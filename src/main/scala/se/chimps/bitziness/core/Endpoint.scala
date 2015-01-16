@@ -1,8 +1,9 @@
 package se.chimps.bitziness.core
 
 import akka.actor.{ActorRef, Actor}
+import se.chimps.bitziness.core.generic.ErrorMapping
 
-trait Endpoint extends Actor {
+trait Endpoint extends Actor with ErrorMapping {
   def service:ActorRef
 }
 

@@ -1,11 +1,11 @@
 package se.chimps.bitziness.core
 
 import akka.actor.{Props, Actor, ActorRef}
-import se.chimps.bitziness.core.generic.{ReceiveChain, HasFeature, Init}
+import se.chimps.bitziness.core.generic.{ErrorMapping, ReceiveChain, HasFeature, Init}
 
 import scala.reflect.ClassTag
 
-abstract class Service extends Actor with HasFeature with ReceiveChain {
+abstract class Service extends Actor with HasFeature with ReceiveChain with ErrorMapping {
   def handle:Receive
 
   private def init:Receive = {
