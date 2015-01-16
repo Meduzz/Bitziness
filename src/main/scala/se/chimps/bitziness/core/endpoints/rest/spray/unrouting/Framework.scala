@@ -21,4 +21,8 @@ object Framework {
     def delete(uri:String, action:Action) = deletes = deletes ++ Map(uri -> action)
   }
 
+  trait View {
+    def render():Array[Byte]
+    def contentType:String
+  }
 }

@@ -2,6 +2,7 @@ package se.chimps.bitziness.core.endpoints.rest.spray.unrouting
 
 import java.net.URLDecoder
 
+import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.View
 import spray.http.HttpHeaders.RawHeader
 import spray.http._
 
@@ -74,6 +75,7 @@ object Model {
     val data = entity match {
       case Some(BodyEntity(data, contentType)) => Some(HttpEntity(ContentType(MediaType.custom(contentType)), data))
       case Some(FileEntity(fileName, contentType)) => Some(HttpEntity(ContentType(MediaType.custom(contentType)), HttpData.fromFile(fileName)))
+      case Some(ViewEntity(view)) => Some(HttpEntity(ContentType(MediaType.custom(view.contentType)), view.render()))
       case None => None
     }
 
@@ -91,8 +93,9 @@ object Model {
   }
 
   trait ResponseBuilder {
-    def withEntity[T](entity:T, contentType:String = "text/html")(implicit conv:(T)=>Array[Byte]):ResponseBuilder
+    def sendEntity[T](entity:T, contentType:String = "text/html")(implicit conv:(T)=>Array[Byte]):ResponseBuilder
     def sendFile(file:String, contentType:String):ResponseBuilder
+    def sendView(view:View):ResponseBuilder
     def header(key:String, value:String):ResponseBuilder
     def build():Response
   }
@@ -100,7 +103,7 @@ object Model {
   class ResponseBuilderImpl(val code:Int = 200, val msg:Option[String] = None, val error:Option[Throwable] = None) extends ResponseBuilder {
     private var entity:Option[Entity] = error match {
       // TODO make this a setting, cause we dont want exceptions in production.
-      case Some(e) => Some(new BodyEntity(s"<h1>An error occurred at ${msg.getOrElse(e.getMessage)}</h1><p>${e.getStackTrace.mkString("</p><p>")}</p>".getBytes("utf-8"), "text/html"))
+      case Some(e) => Some(new BodyEntity(s"<h1>An error occurred at ${msg.getOrElse(e.getMessage)}</h1><h3>${e.getMessage}</h3><p>${e.getStackTrace.mkString("</p><p>")}</p>".getBytes("utf-8"), "text/html"))
       case None => msg match {
         case Some(text) => Some(new BodyEntity(text.getBytes("utf-8"), "text/html"))
         case None => None
@@ -109,7 +112,7 @@ object Model {
 
     private var headers:Map[String, String] = Map()
 
-    override def withEntity[T](data:T, contentType:String = "text/html")(implicit conv:(T)=>Array[Byte]):ResponseBuilder = {
+    override def sendEntity[T](data:T, contentType:String = "text/html")(implicit conv:(T)=>Array[Byte]):ResponseBuilder = {
       entity = Some(new BodyEntity(conv(data), contentType))
       this
     }
@@ -124,12 +127,18 @@ object Model {
       this
     }
 
+    override def sendView(view: View): ResponseBuilder = {
+      entity = Some(ViewEntity(view))
+      this
+    }
+
     override def build():Response = new Response(code, entity, headers)
   }
 
   sealed trait Entity {}
   case class BodyEntity(data:Array[Byte], contentType:String) extends Entity
   case class FileEntity(fileName:String, contentType:String) extends Entity
+  case class ViewEntity(view:View) extends Entity
 
   object Responses {
 
