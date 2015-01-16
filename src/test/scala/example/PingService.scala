@@ -9,11 +9,13 @@ import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.Control
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.Responses.Ok
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.view.Scalate
 import se.chimps.bitziness.core.endpoints.rest.{EndpointDefinition, RestEndpointBuilder, RESTEndpoint}
+import se.chimps.bitziness.core.generic.{Waitable, Awaiting}
 import se.chimps.bitziness.core.{Service}
 import akka.pattern._
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext._
 import scala.concurrent.duration.Duration
+import scala.util.{Failure, Success}
 
 class PingService extends Service {
   override def handle:Receive = {
@@ -25,7 +27,7 @@ class PingService extends Service {
   }
 }
 
-class PingEndpoint(val service:ActorRef) extends RESTEndpoint {
+class PingEndpoint(val service:ActorRef) extends RESTEndpoint with Waitable {
   override def configureRestEndpoint(builder:RestEndpointBuilder):EndpointDefinition = {
     val controller = new PingController(self)
     builder.mountController("", controller)
@@ -36,19 +38,19 @@ class PingEndpoint(val service:ActorRef) extends RESTEndpoint {
     case s:String =>
       implicit val timeout = Timeout(3l, TimeUnit.SECONDS)
       val sender:ActorRef = context.sender()
-      val pong = Await.result(service ? s.toUpperCase, Duration(3l, TimeUnit.SECONDS)).asInstanceOf[String].toLowerCase
+      val pong = (service ? s.toUpperCase).get[String].toLowerCase
       sender ! pong
   }
 }
 
-class PingController(val endpoint:ActorRef) extends Controller {
+class PingController(val endpoint:ActorRef) extends Controller with Waitable {
   override def apply(service:ActorRef):Unit = {
     get("/", Action { req =>
       Ok().sendView(Scalate("/templates/hello.jade", Map("title"->"Hello world!"))).build()
     })
     get("/ping", Action { req =>
       implicit val timeout = Timeout(3l, TimeUnit.SECONDS)
-      val pong = Await.result(service ? "ping", Duration(3l, TimeUnit.SECONDS)).asInstanceOf[String]
+      val pong = (service ? "ping").get[String]
       Ok().sendView(Scalate("/templates/ping.jade", Map("pong" -> pong))).build()
     })
     get("/hello/:world", Action { req =>
