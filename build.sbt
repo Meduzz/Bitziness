@@ -1,6 +1,6 @@
 name := "Bitziness"
 
-version := "0.3-SNAPSHOT"
+version := "0.4-SNAPSHOT"
 
 scalaVersion := "2.11.1"
 
@@ -27,3 +27,5 @@ libraryDependencies += "io.spray" % "spray-can_2.11" % "1.3.1"
 libraryDependencies += "com.etaty.rediscala" %% "rediscala" % "1.4.0"
 
 libraryDependencies += "org.json4s" %% "json4s-native" % "3.2.10"
+
+libraryDependencies += "org.scalatra.scalate" %% "scalate-core" % "1.7.0"
