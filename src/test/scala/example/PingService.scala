@@ -7,6 +7,7 @@ import akka.util.Timeout
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Action
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.Controller
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.Responses.Ok
+import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.view.Scalate
 import se.chimps.bitziness.core.endpoints.rest.{EndpointDefinition, RestEndpointBuilder, RESTEndpoint}
 import se.chimps.bitziness.core.{Service}
 import akka.pattern._
@@ -43,16 +44,15 @@ class PingEndpoint(val service:ActorRef) extends RESTEndpoint {
 class PingController(val endpoint:ActorRef) extends Controller {
   override def apply(service:ActorRef):Unit = {
     get("/", Action { req =>
-      Ok().withEntity("Hello world!<br/>Try out our <a href=\"/ping\">ping</a>!").build()
+      Ok().sendView(Scalate("/templates/hello.jade", Map("title"->"Hello world!"))).build()
     })
     get("/ping", Action { req =>
       implicit val timeout = Timeout(3l, TimeUnit.SECONDS)
       val pong = Await.result(service ? "ping", Duration(3l, TimeUnit.SECONDS)).asInstanceOf[String]
-      val helloWorld = "\"/hello/world\""
-      Ok().withEntity(s"Service replied: ${pong}!<br>Dont miss the dynamic <a href=${helloWorld}>Hello world</a>.").build()
+      Ok().sendView(Scalate("/templates/ping.jade", Map("pong" -> pong))).build()
     })
     get("/hello/:world", Action { req =>
-      Ok().withEntity(s"Hello ${req.params("world").getOrElse("failed")}!").build()
+      Ok().sendView(Scalate("/templates/world.jade", Map("world" -> req.params("world").getOrElse("failed")))).build()
     })
   }
 

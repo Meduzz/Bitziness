@@ -38,28 +38,28 @@ class MyController extends Controller {
   import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.Responses._
 
   def apply(service:ActorRef)= {
-    get("/", Action {(req:Request) => Ok().withEntity("Hello!").build() })
-    post("/gringo", Action {(req:Request) => Ok().withEntity(req.entity[String].getOrElse("fail!")).build() })
-    get("/a/b/c/d", Action {(req:Request) => Ok().withEntity("They are all here!").build() })
-    get("/q/q", Action {(req:Request) => Ok().withEntity("q/q").build() })
-    get("/q/:q", Action {(req:Request) => Ok().withEntity("q/:q").build() })
+    get("/", Action {(req:Request) => Ok().sendEntity("Hello!").build() })
+    post("/gringo", Action {(req:Request) => Ok().sendEntity(req.entity[String].getOrElse("fail!")).build() })
+    get("/a/b/c/d", Action {(req:Request) => Ok().sendEntity("They are all here!").build() })
+    get("/q/q", Action {(req:Request) => Ok().sendEntity("q/q").build() })
+    get("/q/:q", Action {(req:Request) => Ok().sendEntity("q/:q").build() })
     get("/test/:test", Action { req =>
       val test = req.params("test").getOrElse("fail!")
-      Ok().withEntity(test).build()
+      Ok().sendEntity(test).build()
     })
     get("/hello/:a/and/:b", Action { req =>
       val a = req.params("a").getOrElse("fail")
       val b = req.params("b").getOrElse("fail")
-      Ok().withEntity(s"Hello ${a} and ${b}!").build()
+      Ok().sendEntity(s"Hello ${a} and ${b}!").build()
     })
     post("/form/:id", Action { req =>
       val id = req.params("id").getOrElse("fail")
-      Ok().withEntity(s"Your id #${id}.").build()
+      Ok().sendEntity(s"Your id #${id}.").build()
     })
     get("/crash", Action(() => throw new RuntimeException("TBD")))
     get("/headers", Action(() => Ok().header("Date", "2014-01-01T00:00:00").header("Server", "spam").header("Connection", "ok").build()))
     get("/file", Action(() => Ok().sendFile(getClass.getResource("/static.css").getPath, "text/stylesheet").build()))
-    get("/static/:file.:ending", Action(req => Ok().withEntity(s"${req.params("file").get}.${req.params("ending").get}").build()))
+    get("/static/:file.:ending", Action(req => Ok().sendEntity(s"${req.params("file").get}.${req.params("ending").get}").build()))
   }
 
   implicit def str2Bytes(str:String):Array[Byte] = str.getBytes("utf-8")
