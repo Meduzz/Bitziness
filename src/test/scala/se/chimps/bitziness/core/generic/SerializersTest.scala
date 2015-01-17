@@ -1,6 +1,8 @@
 package se.chimps.bitziness.core.generic
 
 import akka.actor.ActorSystem
+import org.json4s.{ShortTypeHints, DefaultFormats}
+import org.json4s.native.Serialization
 import org.scalatest.{BeforeAndAfterAll,FunSuite}
 import se.chimps.bitziness.core.generic.Serializers.{JSONSerializer, ObjectSerializer}
 
@@ -35,6 +37,18 @@ class SerializersTest extends FunSuite with BeforeAndAfterAll {
     val reborn = serializer.fromJSON[Simple](json)
     assert(reborn.name.equals(name), "the reborns name did not match the original name.")
     assert(reborn.equals(subject), "the reborn did not equal the subject.")
+  }
+
+  test("list of objects can go into json and back") {
+    val subject = List(Simple("1"), Simple("2"))
+
+    val json = serializer.toJSON(subject)
+    assert(json != null, "the json string was null")
+    assert(!json.isEmpty, "the json string was empty")
+
+    val reborn = serializer.fromJSON[List[Simple]](json)
+    assert(reborn.size == 2, "the size of the reborn are incorrect.")
+    assert(reborn.equals(subject), "the reborn does not equal the subject")
   }
 
   override protected def afterAll():Unit = {
