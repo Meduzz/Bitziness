@@ -3,7 +3,7 @@ Bitzinezz
 
 The microservice framework.
 
-Bitzinezz are shamelessly influenced by the excellent Dropwizard framework. But built on top of Akka, Spray and other less 1998-style frameworks.
+Bitzinezz are shamelessly influenced by the excellent Dropwizard framework, but built on top of Akka, Spray and other less 1998-style frameworks.
 Almost everything in Bitzinezz is an actor.
 
 A Bitzinezz app will have one App with a main-method. The app register one or more services, whom in turn can have multiple endpoints.
@@ -94,3 +94,5 @@ class PingController(val endpoint:ActorRef) extends Controller {
   }
 }
 ```
+
+Lets get down to Bitzinezz shall we!?
