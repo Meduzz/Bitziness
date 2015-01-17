@@ -8,16 +8,34 @@ import scala.reflect.ClassTag
 
 /**
  * An attempt to get rid of some boilerplatish future handling
- * TODO this could potentially be renamded to Implicits and collect other helpers & implicit explicits.
  */
-trait Waitable {
+object Waitable {
   implicit def duration:Option[Duration] = None
-  implicit def waiting(future:Future[Any]):Awaiting = {
-    new Awaiting(future)
+
+  /**
+   * This allows for implicit explicits.
+   * @param future
+   * @return
+   */
+  implicit def waiting(future:Future[Any]):Waitable = {
+    new WaitableImpl(future)
+  }
+
+  /**
+   * This allows for a manual actions.
+   * @param future
+   * @return
+   */
+  def apply(future:Future[Any]):Waitable = {
+    new WaitableImpl(future)
   }
 }
 
-class Awaiting(val any:Future[Any])(implicit val duration:Option[Duration]) {
+trait Waitable {
+  def get[T](implicit tag:ClassTag[T]):T
+}
+
+class WaitableImpl(val any:Future[Any])(implicit val duration:Option[Duration]) extends Waitable {
   def get[T](implicit tag:ClassTag[T]):T = {
     Await.result(any.mapTo[T], duration.getOrElse(Duration(3l, TimeUnit.SECONDS)))
   }

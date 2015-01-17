@@ -2,20 +2,16 @@ package example
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{ActorRef}
+import akka.actor.ActorRef
 import akka.util.Timeout
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Action
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.Controller
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.Responses.Ok
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.view.Scalate
 import se.chimps.bitziness.core.endpoints.rest.{EndpointDefinition, RestEndpointBuilder, RESTEndpoint}
-import se.chimps.bitziness.core.generic.{Waitable, Awaiting}
+import se.chimps.bitziness.core.generic.Waitable._
 import se.chimps.bitziness.core.{Service}
 import akka.pattern._
-import scala.concurrent.Await
-import scala.concurrent.ExecutionContext._
-import scala.concurrent.duration.Duration
-import scala.util.{Failure, Success}
 
 class PingService extends Service {
   override def handle:Receive = {
@@ -27,7 +23,7 @@ class PingService extends Service {
   }
 }
 
-class PingEndpoint(val service:ActorRef) extends RESTEndpoint with Waitable {
+class PingEndpoint(val service:ActorRef) extends RESTEndpoint {
   override def configureRestEndpoint(builder:RestEndpointBuilder):EndpointDefinition = {
     val controller = new PingController(self)
     builder.mountController("", controller)
@@ -43,7 +39,7 @@ class PingEndpoint(val service:ActorRef) extends RESTEndpoint with Waitable {
   }
 }
 
-class PingController(val endpoint:ActorRef) extends Controller with Waitable {
+class PingController(val endpoint:ActorRef) extends Controller {
   override def apply(service:ActorRef):Unit = {
     get("/", Action { req =>
       Ok().sendView(Scalate("/templates/hello.jade", Map("title"->"Hello world!"))).build()
