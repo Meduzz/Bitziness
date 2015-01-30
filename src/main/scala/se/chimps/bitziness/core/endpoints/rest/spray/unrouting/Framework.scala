@@ -13,7 +13,7 @@ object Framework {
     private[rest] var puts = Map[String, Action]()
     private[rest] var deletes = Map[String, Action]()
 
-    def apply(service:ActorRef)
+    def apply(endpoint:ActorRef)
 
     def get(uri:String, action:Action) = gets = gets ++ Map(uri -> action)
     def post(uri:String, action:Action) = posts = posts ++ Map(uri -> action)
