@@ -56,9 +56,6 @@ class SerializersTest extends FunSuite with BeforeAndAfterAll {
 
     val bytes = serializer.serialize(subject)
     assert(bytes.length > 0, "bytes were not more than 0 in length.")
-    println(bytes.length)
-    bytes.foreach(b => print(b.toChar))
-    println()
 
     val reborn = serializer.deserialize[List[Simple]](bytes)
     assert(reborn.size == subject.size, "reborn had different size than subject.")

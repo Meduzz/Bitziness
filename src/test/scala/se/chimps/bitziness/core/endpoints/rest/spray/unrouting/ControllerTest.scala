@@ -48,8 +48,7 @@ class MyController extends Controller {
       Ok().sendEntity(test).build()
     })
     get("/hello/:a/and/:b", Action { req =>
-      val a = req.params("a").getOrElse("fail")
-      val b = req.params("b").getOrElse("fail")
+      val Seq(Some(a), Some(b)) = req.params("a", "b")
       Ok().sendEntity(s"Hello ${a} and ${b}!").build()
     })
     post("/form/:id", Action { req =>
