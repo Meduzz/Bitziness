@@ -51,6 +51,20 @@ class SerializersTest extends FunSuite with BeforeAndAfterAll {
     assert(reborn.equals(subject), "the reborn does not equal the subject")
   }
 
+  test("list of objects can go into bytes and back") {
+    val subject = List(Simple("1"), Simple("2"))
+
+    val bytes = serializer.serialize(subject)
+    assert(bytes.length > 0, "bytes were not more than 0 in length.")
+    println(bytes.length)
+    bytes.foreach(b => print(b.toChar))
+    println()
+
+    val reborn = serializer.deserialize[List[Simple]](bytes)
+    assert(reborn.size == subject.size, "reborn had different size than subject.")
+    assert(reborn.equals(subject), "reborn was not equal to the subject.")
+  }
+
   override protected def afterAll():Unit = {
     serializer.shutdown()
   }
