@@ -12,6 +12,7 @@ import se.chimps.bitziness.core.endpoints.rest.{EndpointDefinition, RestEndpoint
 import se.chimps.bitziness.core.generic.Waitable._
 import se.chimps.bitziness.core.{Service}
 import akka.pattern._
+import scala.concurrent.ExecutionContext.global
 
 class PingService extends Service {
   override def handle:Receive = {
@@ -24,6 +25,8 @@ class PingService extends Service {
 }
 
 class PingEndpoint(val service:ActorRef) extends RESTEndpoint {
+  implicit val executor = global
+
   override def configureRestEndpoint(builder:RestEndpointBuilder):EndpointDefinition = {
     val controller = new PingController(self)
     builder.mountController("", controller)
@@ -40,6 +43,8 @@ class PingEndpoint(val service:ActorRef) extends RESTEndpoint {
 }
 
 class PingController(val endpoint:ActorRef) extends Controller {
+  implicit val executor = global
+
   override def apply(service:ActorRef):Unit = {
     get("/", Action { req =>
       Ok().sendView(Scalate("/templates/hello.jade", Map("title"->"Hello world!"))).build()

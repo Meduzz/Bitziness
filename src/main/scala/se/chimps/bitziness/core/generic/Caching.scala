@@ -2,53 +2,40 @@ package se.chimps.bitziness.core.generic
 
 import java.util.concurrent.atomic.AtomicLong
 
-import se.chimps.bitziness.core.generic.Caching.{Config, Cache, CacheFactory, CacheBase}
+import akka.actor.ActorSystem
+import akka.util.ByteString
+import redis.RedisClient
+import se.chimps.bitziness.core.generic.Caching.Cache
+import se.chimps.bitziness.core.generic.Serializers.JSONSerializer
 
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 import scala.concurrent.{Promise, Future}
 import scala.reflect.ClassTag
-import scala.util.Try
+import scala.util.{Success, Failure, Try}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * Some caching abstractions and implementations.
  */
 object Caching {
-
-  def apply(base:CacheBase, config:Config):CacheFactory = {
-    base(config)
-  }
-
-  trait Config {
-  }
-
-  trait CacheBase {
-    def apply(config:Config):CacheFactory
-  }
-
-  trait CacheFactory {
-    def load[C]()(implicit evidence:ClassTag[C]):Cache[C]
-
-    // TODO add makeSpace-like method.
-  }
-
   trait Cache[T] {
-    def put(key:String, instance:T):Boolean
+    def put(key:String, instance:T):Future[Boolean]
     def get(key:String):Future[T]
-    def has(key:String):Boolean
-    def expire(key:String):Boolean
-    def expireAll():Boolean
+    def has(key:String):Future[Boolean]
+    def expire(key:String):Future[Boolean]
+    def expireAll():Future[Boolean]
   }
 }
 
-object LocalCache extends CacheBase {
+object LocalCache {
 
-  override def apply(config:Config):CacheFactory = new LocalCacheFactory(config.asInstanceOf[LocalConfig])
+  def apply(config:LocalConfig):LocalCacheFactory = new LocalCacheFactory(config)
 
-  private class LocalCacheFactory(val config:LocalConfig) extends CacheFactory {
-    lazy val cacheStore = TrieMap[Class[_], LocalCache[_]]()
+  class LocalCacheFactory(val config:LocalConfig) {
+    lazy val cacheStore = TrieMap[Class[_], Cache[_]]()
 
-    override def load[C]()(implicit evidence:ClassTag[C]):Cache[C] = {
+    def load[C]()(implicit evidence:ClassTag[C]):Cache[C] = {
       if (!cacheStore.contains(evidence.runtimeClass)) {
         cacheStore.put(evidence.runtimeClass, new LocalCache[C](config))
       }
@@ -56,7 +43,7 @@ object LocalCache extends CacheBase {
     }
   }
 
-  class LocalConfig extends Config {
+  class LocalConfig {
     val weights = mutable.Map[Class[_], Int]()
 
     def weight(clazz:Class[_], weight:Int):LocalConfig = {
@@ -74,14 +61,13 @@ object LocalCache extends CacheBase {
      * varje typ får en vikt och varje item en timestamp som uppdateras så fort itemen läses.
      */
 
-    override def put(key:String, instance:T):Boolean = {
+    override def put(key:String, instance:T):Future[Boolean] = {
       store.put(key, Item(instance, new AtomicLong(0L)))
-      true
+      Future {true}
     }
 
-    override def expireAll():Boolean = {
-      store.clear()
-      store.isEmpty
+    override def expireAll():Future[Boolean] = {
+      Future {store.clear(); store.isEmpty}
     }
 
     override def get(key:String):Future[T] = {
@@ -94,13 +80,94 @@ object LocalCache extends CacheBase {
       p.future
     }
 
-    override def expire(key:String):Boolean = {
+    override def expire(key:String):Future[Boolean] = {
       store.remove(key)
-      true
+      Future {true}
     }
 
-    override def has(key:String):Boolean = store.contains(key)
+    override def has(key:String):Future[Boolean] = Future {store.contains(key)}
   }
 
   case class Item[T](value:T, vector:AtomicLong)
+}
+
+object RedisCache {
+
+  def apply(config: RedisConfig)(implicit system:ActorSystem): RedisCacheFactory = new RedisCacheFactory(config)
+
+  case class RedisConfig(host:String = "localhost"
+                         , port:Int = 6379
+                         , auth:Option[String] = None
+                         , db:Option[Int] = None
+                         , expireSec:Option[Int] = None
+                         , maxKeys:Option[Int] = None)
+
+  class RedisCacheFactory(val config:RedisConfig)(implicit val system:ActorSystem) {
+    def load[C]()(implicit evidence: Manifest[C]): Cache[C] = new RedisCache[C](config.expireSec, config.maxKeys, RedisClient(config.host, config.port, config.auth, config.db))
+  }
+
+  class RedisCache[C](val expire:Option[Int], val maxKeys:Option[Int], val client:RedisClient)(implicit val evidence:Manifest[C]) extends Cache[C] with JSONSerializer {
+
+    val prefix = (key:String)=>s"cache.$key"
+    val keysSet = "cachedkeys"
+
+    override def put(key: String, instance: C): Future[Boolean] = expire match {
+      case Some(time) => client.setex(prefix(key), time.toLong, toJSON(instance.asInstanceOf[AnyRef]))
+        .map {
+          case true => sadd(key)
+          case false => false
+        }
+      case None => client.set(prefix(key), toJSON(instance.asInstanceOf[AnyRef]))
+        .map {
+          case true => sadd(key)
+          case false => false
+        }
+    }
+
+    override def expireAll(): Future[Boolean] = {
+      Future {
+        import Waitable._
+        client.smembers(keysSet).get[Seq[ByteString]].map(_.utf8String).foreach { key =>
+          client.del(key)
+          client.srem(keysSet, key)
+        }
+        true
+      }
+    }
+
+    override def get(key: String): Future[C] = {
+      client.get(prefix(key)).map[C] {
+        case Some(bytes) => updateExpire(key); fromJSON[C](bytes.utf8String)
+        case None => throw new RuntimeException(s"No value found for key: $key.")
+      }
+    }
+
+    override def expire(key: String): Future[Boolean] = {
+      import Waitable._
+      Future {client.srem(keysSet, key); client.del(prefix(key)).get[Long] == 1}
+    }
+
+    override def has(key: String): Future[Boolean] = {
+      client.sismember(keysSet, key)
+    }
+
+    private def sadd(key:String):Boolean = {
+      val i = client.sadd(keysSet, key)
+
+      while (!i.isCompleted) {}
+
+      i.value match {
+        case Some(Success(l)) => l <= 1L
+        case Some(Failure(e)) => false
+        case None => false
+      }
+    }
+
+    private def updateExpire(key:String) = {
+      expire match {
+        case Some(time) => client.expire(prefix(key), time)
+        case None => Unit
+      }
+    }
+  }
 }

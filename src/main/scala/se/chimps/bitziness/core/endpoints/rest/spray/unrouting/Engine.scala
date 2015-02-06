@@ -20,7 +20,7 @@ trait Engine {
     hasMatch(req) match {
       case Some(a:ActionMetadata) => Try(a.action(new RequestImpl(req, a))) match {
         case Success(r:Response) => r.toResponse()
-        case Failure(e:Exception) => fiveZeroZero(uri, e).toResponse()
+        case Failure(e:Throwable) => fiveZeroZero(uri, e).toResponse()
       }
       case None => fourZeroFour(uri).toResponse()
     }

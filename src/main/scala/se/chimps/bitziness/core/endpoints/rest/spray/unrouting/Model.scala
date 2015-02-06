@@ -14,7 +14,6 @@ object Model {
     def header(key:String):Option[String]
     def params(key:String):Option[String]
     def params(keys:String*):Seq[Option[String]]
-    def session(key:String):Option[String]
     def cookie(key:String):Option[String]
     def entity[T](implicit conv:(Array[Byte])=>Option[T]):Option[T]
   }
@@ -67,9 +66,6 @@ object Model {
     override def params(key:String):Option[String] = parms.get(key)
 
     override def params(keys: String*): Seq[Option[String]] = keys.map(parms.get(_))
-
-    // TODO create a session store.
-    override def session(key:String):Option[String] = None
 
     override def cookie(key:String):Option[String] = None
   }
