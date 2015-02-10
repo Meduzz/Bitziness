@@ -13,8 +13,6 @@ object Framework {
     private[rest] var puts = Map[String, Action]()
     private[rest] var deletes = Map[String, Action]()
 
-    def sessionId:String = "session"
-
     def apply(endpoint:ActorRef)
 
     def get(uri:String, action:Action) = gets = gets ++ Map(uri -> action)
