@@ -37,7 +37,7 @@ object Model {
       if (request.method.isEntityAccepted && request.headers.
         exists(h => h.value.equals("application/x-www-form-urlencoded"))) {
 
-        val regex = "([a-zA-Z0-9]+)=([a-zA-Z0-9]+)".r
+        val regex = "([a-zA-Z0-9]+)=([a-zA-Z0-9]+)".r // TODO potentially misses cases with funny data.
         val decoded = URLDecoder.decode(request.entity.asString(HttpCharsets.`UTF-8`), HttpCharsets.`UTF-8`.value)
         val split = decoded.split("&").filter(split => split.matches(regex.regex))
 
@@ -47,7 +47,10 @@ object Model {
           post = post ++ Map(matches.group(1) -> matches.group(2))
         })
       }
-      parms ++ post
+
+      val query = request.uri.query.toMap
+
+      parms ++ post ++ query
     }
 
     private val parms:Map[String, String] = createParms()
@@ -67,10 +70,10 @@ object Model {
 
     override def params(keys: String*): Seq[Option[String]] = keys.map(parms.get(_))
 
-    override def cookie(key:String):Option[String] = None
+    override def cookie(key:String):Option[String] = request.cookies.find(c => c.name.equals(key)).map(c => c.content)
   }
 
-  case class Response(code:Int, entity:Option[Entity], headers:Map[String, String]) {
+  case class Response(code:Int, entity:Option[Entity], headers:Map[String, String], cookie:Map[String, String]) {
     val data = entity match {
       case Some(BodyEntity(data, contentType)) => Some(HttpEntity(ContentType(MediaType.custom(contentType)), data))
       case Some(FileEntity(fileName, contentType)) => Some(HttpEntity(ContentType(MediaType.custom(contentType)), HttpData.fromFile(fileName)))
@@ -78,28 +81,37 @@ object Model {
       case None => None
     }
 
-    val heads = headers.map(kv => (kv._1.toLowerCase() -> kv._2)).map {
-      case ("content-type", x:String) => HttpHeaders.`Content-Type`(ContentType(MediaType.custom(x)))
-      case ("content-length", x:String) => HttpHeaders.`Content-Length`(x.toLong)
-      case ("transfer-encoding", x:String) => HttpHeaders.`Transfer-Encoding`(x)
-      case ("date", x:String) => HttpHeaders.Date(x.toDate)
-      case ("server", x:String) => HttpHeaders.Server(x)
-      case ("connection", x:String) => HttpHeaders.Connection(x)
-      case (k:String, v:String) => RawHeader(k, v)
+    var heads = headers.map(kv => (kv._1.toLowerCase() -> kv._2)).map {
+      case ("content-type", x: String) => HttpHeaders.`Content-Type`(ContentType(MediaType.custom(x)))
+      case ("content-length", x: String) => HttpHeaders.`Content-Length`(x.toLong)
+      case ("transfer-encoding", x: String) => HttpHeaders.`Transfer-Encoding`(x)
+      case ("date", x: String) => HttpHeaders.Date(x.toDate)
+      case ("server", x: String) => HttpHeaders.Server(x)
+      case ("connection", x: String) => HttpHeaders.Connection(x)
+      case (k: String, v: String) => RawHeader(k, v)
     }.toList
 
-    private[rest] def toResponse():HttpResponse = HttpResponse(code, data, heads)
+    // TODO make expire an setting and an optional param when the cookie are defined.
+    private[rest] def toResponse(): HttpResponse = HttpResponse(code, data, heads ++ cookie
+      .map(f => HttpHeaders.`Set-Cookie`(HttpCookie(name = f._1, content = f._2, httpOnly = true, expires = Some(DateTime(0L)))))
+      .toSeq)
   }
+
 
   trait ResponseBuilder {
     def sendEntity[T](entity:T, contentType:String = "text/html")(implicit conv:(T)=>Array[Byte]):ResponseBuilder
     def sendFile(file:String, contentType:String):ResponseBuilder
     def sendView(view:View):ResponseBuilder
     def header(key:String, value:String):ResponseBuilder
+    def cookie(key:String, value:String):ResponseBuilder
     def build():Response
   }
 
   class ResponseBuilderImpl(val code:Int = 200, val msg:Option[String] = None, val error:Option[Throwable] = None) extends ResponseBuilder {
+
+    private var headers:Map[String, String] = Map()
+    private var cookie:Map[String, String] = Map()
+
     private var entity:Option[Entity] = error match {
       // TODO make this a setting, cause we dont want exceptions in production.
       case Some(e) => Some(new BodyEntity(s"<h1>An error occurred at ${msg.getOrElse(e.getMessage)}</h1><h3>${e.getMessage}</h3><p>${e.getStackTrace.mkString("</p><p>")}</p>".getBytes("utf-8"), "text/html"))
@@ -108,8 +120,6 @@ object Model {
         case None => None
       }
     }
-
-    private var headers:Map[String, String] = Map()
 
     override def sendEntity[T](data:T, contentType:String = "text/html")(implicit conv:(T)=>Array[Byte]):ResponseBuilder = {
       entity = Some(new BodyEntity(conv(data), contentType))
@@ -131,7 +141,12 @@ object Model {
       this
     }
 
-    override def build():Response = new Response(code, entity, headers)
+    override def cookie(key: String, value: String): ResponseBuilder = {
+      cookie = cookie ++ Map(key -> value)
+      this
+    }
+
+    override def build():Response = new Response(code, entity, headers, cookie)
   }
 
   sealed trait Entity {}

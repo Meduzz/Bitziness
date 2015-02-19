@@ -1,0 +1,17 @@
+-@ var cookie: String
+-@ var key: String
+-@ var title: String
+!!! 5
+html
+  head
+    title #{title}
+  body
+    h1 #{title}
+    form(method="get")
+      input(type="text" name="key" placeholder="Cookie key.")
+      input(type="text" name="value" placeholder="Cookie value.")
+      input(type="submit" value="Save")
+    form(method="get")
+      input(type="text" name="view" placeholder="Cookie key" value="#{key}")
+      input(type="submit" value="show")
+    p Cookie value: #{key} = #{cookie}.

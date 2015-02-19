@@ -9,6 +9,8 @@ import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.Control
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.Responses.Ok
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.view.Scalate
 import se.chimps.bitziness.core.endpoints.rest.{EndpointDefinition, RestEndpointBuilder, RESTEndpoint}
+import se.chimps.bitziness.core.generic.LocalSession.LocalSessionFactory
+import se.chimps.bitziness.core.generic.{SessionFactory, SessionSupport}
 import se.chimps.bitziness.core.generic.Waitable._
 import se.chimps.bitziness.core.{Service}
 import akka.pattern._
@@ -42,8 +44,10 @@ class PingEndpoint(val service:ActorRef) extends RESTEndpoint {
   }
 }
 
-class PingController(val endpoint:ActorRef) extends Controller {
+class PingController(val endpoint:ActorRef) extends Controller with SessionSupport {
   implicit val executor = global
+
+  override implicit val sessionFactory: SessionFactory = LocalSessionFactory
 
   override def apply(service:ActorRef):Unit = {
     get("/", Action { req =>
@@ -56,6 +60,18 @@ class PingController(val endpoint:ActorRef) extends Controller {
     })
     get("/hello/:world", Action { req =>
       Ok().sendView(Scalate("/templates/world.jade", Map("world" -> req.params("world").getOrElse("failed")))).build()
+    })
+    get("/cookie", Action { req =>
+      val Seq(key, value, view) = req.params("key", "value", "view")
+      val cookie = req.cookie(view.getOrElse(""))
+
+      var resp = Ok().sendView(Scalate("/templates/cookie.jade", Map("cookie" -> cookie.getOrElse(""), "key" -> view.getOrElse(""), "title" -> "Cookies")))
+
+      if (key.isDefined && value.isDefined) {
+        resp.cookie(key.get, value.get)
+      }
+
+      resp.build()
     })
   }
 
