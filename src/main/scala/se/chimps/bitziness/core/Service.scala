@@ -1,7 +1,8 @@
 package se.chimps.bitziness.core
 
 import akka.actor.{Props, Actor, ActorRef}
-import se.chimps.bitziness.core.generic.{ErrorMapping, ReceiveChain, HasFeature, Init}
+import se.chimps.bitziness.core.generic._
+import se.chimps.bitziness.core.services.healthcheck.HealthChecks
 
 import scala.reflect.ClassTag
 
@@ -26,15 +27,14 @@ abstract class Service extends Actor with HasFeature with ReceiveChain with Erro
   def initEndpoint[T<:Endpoint](endpoint:T, name:String)(implicit evidence:ClassTag[T]):ActorRef = {
     context.system.actorOf(Props(endpoint), name)
   }
-}
 
-/**
- * A base DSL for building projects. Individual modules should add their own dsl/builders/settings to this instance.
- */
-object ServiceBuilder {
-  def apply(projectRef:Service):ServiceBuilder = new ServiceBuilder {
+  def initEndpoint[T<:Endpoint with Naming](endpoint:T)(implicit tag:ClassTag[T]):ActorRef = {
+    context.system.actorOf(Props(endpoint), endpoint.name())
   }
-}
 
-trait ServiceBuilder {
+  def initEndpoint(factory:ActorFactory[Endpoint]):ActorRef = {
+    factory.actor()
+  }
+
+  def healthCheck(name:String, check:()=>Boolean):Unit = HealthChecks.register(name, check)
 }
