@@ -9,13 +9,11 @@ import spray.http._
 
 class ControllerTest extends FunSuite with TestKitBase with ControllerTesting {
   lazy val controller = new MyController
+  lazy val probe = TestProbe()
 
   implicit lazy val system = ActorSystem()
 
   test("the controller should respond nicely") {
-    val probe = TestProbe()
-    controller(probe.ref)
-
     assertResponse(200, "Hello!", request(get("/")), "No gentle Hello!...")
     assertResponse(404, "Nobody home at /spam.", request(get("/spam")), "Expected a 404...")
     assertResponse(200, "asdf", request(post("/gringo", "asdf")))
@@ -61,6 +59,5 @@ class MyController extends Controller {
     get("/static/:file.:ending", Action(req => Ok().sendEntity(s"${req.params("file").get}.${req.params("ending").get}").build()))
   }
 
-  implicit def str2Bytes(str:String):Array[Byte] = str.getBytes("utf-8")
   implicit def bytes2Str(bytes:Array[Byte]):Option[String] = Some(new String(bytes, "utf-8"))
 }

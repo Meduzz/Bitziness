@@ -29,3 +29,5 @@ libraryDependencies += "com.etaty.rediscala" %% "rediscala" % "1.4.0"
 libraryDependencies += "org.json4s" %% "json4s-native" % "3.2.10"
 
 libraryDependencies += "org.scalatra.scalate" %% "scalate-core" % "1.7.0"
+
+libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.0.13"

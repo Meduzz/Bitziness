@@ -11,7 +11,7 @@ class RestMetricsEndpoint(val service:ActorRef) extends RESTEndpoint {
     builder.build()
   }
 
-  override def receive:Receive = {
+  override def rest:Receive = {
     case _ =>
   }
 }

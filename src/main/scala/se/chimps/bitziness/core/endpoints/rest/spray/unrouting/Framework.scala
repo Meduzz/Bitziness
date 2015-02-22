@@ -19,6 +19,10 @@ object Framework {
     def post(uri:String, action:Action) = posts = posts ++ Map(uri -> action)
     def put(uri:String, action:Action) = puts = puts ++ Map(uri -> action)
     def delete(uri:String, action:Action) = deletes = deletes ++ Map(uri -> action)
+
+    implicit def str2Bytes(data:String):Array[Byte] = {
+      data.getBytes("utf-8")
+    }
   }
 
   trait View {

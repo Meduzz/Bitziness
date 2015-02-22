@@ -12,5 +12,5 @@ object HealthChecks {
     hcs = hcs ++ Map(name -> hc)
   }
 
-  def execute()(implicit ec:ExecutionContext):Map[String, Future[Boolean]] = hcs.map(hc => hc._1 -> Future { hc._2() })
+  def execute():Map[String, Boolean] = hcs.map(hc => hc._1 -> hc._2())
 }

@@ -1,6 +1,7 @@
 package se.chimps.bitziness.core.endpoints.rest.spray.unrouting
 
-import se.chimps.bitziness.core.endpoints.rest.EndpointDefinition
+import org.slf4j.LoggerFactory
+import se.chimps.bitziness.core.endpoints.rest.{Routes}
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.{Response, RequestImpl}
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.Responses.{Error, NotFound}
 import spray.http.{HttpMethods, HttpResponse, HttpRequest}
@@ -12,15 +13,16 @@ import scala.util.matching.Regex
  * A base trait with all the code necessary to route requests.
  */
 trait Engine {
-  def definitions:EndpointDefinition
-  lazy val actions = setupActions(definitions)
+  private var actions:Map[String, Map[Regex, ActionMetadata]] = Map()
+  private val log = LoggerFactory.getLogger(getClass.getName)
 
   protected def request(req:HttpRequest):HttpResponse = {
     val uri = req.uri.path.toString()
     hasMatch(req) match {
-      case Some(a:ActionMetadata) => Try(a.action(new RequestImpl(req, a))) match {
-        case Success(r:Response) => r.toResponse()
-        case Failure(e:Throwable) => fiveZeroZero(uri, e).toResponse()
+      case Some(actionMetadata:ActionMetadata) =>
+        Try(actionMetadata.action(new RequestImpl(req, actionMetadata))) match {
+          case Success(r:Response) => r.toResponse()
+          case Failure(e:Throwable) => fiveZeroZero(uri, e).toResponse()
       }
       case None => fourZeroFour(uri).toResponse()
     }
@@ -38,12 +40,12 @@ trait Engine {
   }
 
   private def findMatch(someActions:Map[Regex, ActionMetadata], path:String):Option[ActionMetadata] = {
-    val find = someActions.filter(action => path.matches(action._1.regex) || action._2.path.equals(path))
+    val allMatches = someActions.filter(action => path.matches(action._1.regex) || action._2.path.equals(path))
 
-    val exactPath = find.find(a => a._2.path.equals(path))
+    val exactPath = allMatches.find(pair => pair._2.path.equals(path))
 
     // there are still room for action-bingo here if there are more than one regex match...
-    exactPath.orElse(find.filter(a => !a._2.equals(path)).headOption) match {
+    exactPath.orElse(allMatches.filter(pair => !pair._2.equals(path)).headOption) match {
       case Some((_:Regex, m:ActionMetadata)) => Some(m)
       case None => None
     }
@@ -61,10 +63,10 @@ trait Engine {
     msg.getBytes("utf-8")
   }
 
-  private def setupActions(defs:EndpointDefinition):Map[String, Map[Regex, ActionMetadata]] = {
+  def addActions(routes:Routes):Unit = {
     var raw = Map[String, Map[String, Action]]()
 
-    defs.modules.foreach(ctrl => {
+    routes.routes.foreach(ctrl => {
       val root = ctrl._1
       val controller = ctrl._2
 
@@ -83,13 +85,19 @@ trait Engine {
       regexilized = regexilized ++ Map(method -> mapToRegex(methodActions, Map[Regex, ActionMetadata]()))
     })
 
-    regexilized
+    regexilized.foreach {
+      case (path, routes) => {
+        val existingRoutes = actions.getOrElse(path, Map()) ++ routes
+        actions = actions ++ Map(path -> existingRoutes)
+      }
+    }
   }
 
   private def copyAndImproveMap(root:String, source:Map[String, Action], target:Map[String, Action]):Map[String, Action] = {
     var copy = target
 
     source.foreach(actions => {
+      log.info("Adding new path: {}", root+actions._1)
       copy = copy ++ Map(root+actions._1 -> actions._2)
     })
 

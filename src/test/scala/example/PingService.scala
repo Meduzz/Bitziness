@@ -23,6 +23,7 @@ class PingService extends Service {
 
   override def initialize():Unit = {
     initEndpoint[PingEndpoint](classOf[PingEndpoint], "Http")
+    healthCheck("PingService", () => 1==1)
   }
 }
 
@@ -30,12 +31,14 @@ class PingEndpoint(val service:ActorRef) extends RESTEndpoint {
   implicit val executor = global
 
   override def configureRestEndpoint(builder:RestEndpointBuilder):EndpointDefinition = {
+    healthCheck("PingEndpoint", () => 1==1)
+
     val controller = new PingController(self)
     builder.mountController("", controller)
     builder.build()
   }
 
-  override def receive:Receive = {
+  override def rest:Receive = {
     case s:String =>
       implicit val timeout = Timeout(3l, TimeUnit.SECONDS)
       val sender:ActorRef = context.sender()

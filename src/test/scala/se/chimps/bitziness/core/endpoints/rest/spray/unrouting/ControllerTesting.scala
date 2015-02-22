@@ -1,6 +1,7 @@
 package se.chimps.bitziness.core.endpoints.rest.spray.unrouting
 
-import se.chimps.bitziness.core.endpoints.rest.EndpointDefinition
+import akka.testkit.TestProbe
+import se.chimps.bitziness.core.endpoints.rest.{Routes, EndpointDefinition}
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.Controller
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.Responses.{Error, NotFound}
 import spray.http._
@@ -11,7 +12,10 @@ import spray.http._
  */
 trait ControllerTesting extends Engine {
   def controller:Controller
-  lazy val definitions = new EndpointDefinition(null, null, Map("" -> controller))
+  def probe:TestProbe
+
+  controller(probe.ref)
+  addActions(Routes(Map("" -> controller)))
 
   def buildRequest(method:HttpMethod, uri:String, body:Option[String]):HttpRequest = {
     HttpRequest(method, Uri(uri), List(), body match {
