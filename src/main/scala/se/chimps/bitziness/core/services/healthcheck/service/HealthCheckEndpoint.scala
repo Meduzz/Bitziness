@@ -32,5 +32,8 @@ class HealthCheckController extends Controller with JSONSerializer {
 
       Ok().sendEntity(toJSON(health), "application/javascript").build()
     })
+    get("/ping", Action { req =>
+      Ok().sendEntity("pong", "text/plain").build()
+    })
   }
 }
