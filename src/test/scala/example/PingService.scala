@@ -7,7 +7,7 @@ import akka.util.Timeout
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Action
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.Controller
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.Responses.Ok
-import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.view.Scalate
+import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.view.{Jade4j, Scalate}
 import se.chimps.bitziness.core.endpoints.rest.{EndpointDefinition, RestEndpointBuilder, RESTEndpoint}
 import se.chimps.bitziness.core.generic.LocalSession.LocalSessionFactory
 import se.chimps.bitziness.core.generic.{SessionFactory, SessionSupport}
@@ -62,7 +62,7 @@ class PingController(val endpoint:ActorRef) extends Controller with SessionSuppo
       Ok().sendView(Scalate("/templates/ping.jade", Map("pong" -> pong))).build()
     })
     get("/hello/:world", Action { req =>
-      Ok().sendView(Scalate("/templates/world.jade", Map("world" -> req.params("world").getOrElse("failed")))).build()
+      Ok().sendView(Jade4j.classpath("templates/world.jade", Map("world" -> req.params("world").getOrElse("failed")))).build()
     })
     get("/cookie", Action { req =>
       val Seq(key, value, view) = req.params("key", "value", "view")
