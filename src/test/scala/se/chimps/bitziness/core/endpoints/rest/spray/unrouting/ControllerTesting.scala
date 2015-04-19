@@ -1,14 +1,17 @@
 package se.chimps.bitziness.core.endpoints.rest.spray.unrouting
 
 import akka.testkit.TestProbe
-import se.chimps.bitziness.core.endpoints.rest.{Routes, EndpointDefinition}
+import se.chimps.bitziness.core.endpoints.rest.Routes
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.Controller
-import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.Responses.{Error, NotFound}
 import spray.http._
+
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.{Failure, Success}
 
 /**
  * A smallish trait to help test controllers.
- * TODO make this avaailable in "core" for other projects to use.
+ * TODO make this available in "core" for other projects to use.
  */
 trait ControllerTesting extends Engine {
   def controller:Controller
@@ -40,14 +43,19 @@ trait ControllerTesting extends Engine {
     buildRequest(HttpMethods.DELETE, uri, None)
   }
 
-  def assertResponse(status:Int, body:String, response:HttpResponse, clue:String = "") = {
+  def assertResponse(status:Int, body:String, response:Future[HttpResponse], clue:String = "") = {
 //    println(response.entity.asString(HttpCharsets.`UTF-8`))
-    response.entity.isEmpty // lazy issue?
-    assert(response.status.intValue == status, clue)
-    if (body == null) {
-      assert(response.entity.isEmpty)
-    } else {
-      assert(response.entity.asString(HttpCharsets.`UTF-8`).startsWith(body), clue)
+    response.onComplete {
+      case Success(res) => {
+        res.entity.isEmpty // lazy issue?
+        assert(res.status.intValue == status, clue)
+        if (body == null) {
+          assert(res.entity.isEmpty)
+        } else {
+          assert(res.entity.asString(HttpCharsets.`UTF-8`).startsWith(body), clue)
+        }
+      }
+      case Failure(e) => throw e
     }
   }
 }

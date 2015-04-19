@@ -24,7 +24,6 @@ trait Engine {
       case Some(actionMetadata:ActionMetadata) =>
         Try(actionMetadata.action(new RequestImpl(req, actionMetadata))) match {
           case Success(f:Future[Response]) => f.map(_.toResponse())
-          case Success(r:Response) => Future(r.toResponse())
           case Failure(e:Throwable) => Future(fiveZeroZero(uri, e).toResponse())
       }
       case None => Future(fourZeroFour(uri).toResponse())
