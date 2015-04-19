@@ -6,6 +6,9 @@ import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.View
 import spray.http.HttpHeaders.RawHeader
 import spray.http._
 
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
+
 object Model {
 
   trait Request {
@@ -73,7 +76,7 @@ object Model {
     override def cookie(key:String):Option[String] = request.cookies.find(c => c.name.equals(key)).map(c => c.content)
   }
 
-  case class Response(code:Int, entity:Option[Entity], headers:Map[String, String], cookie:Map[String, String]) {
+  case class Response(code:Int, entity:Option[Entity], headers:Map[String, String], cookie:Map[String, String], chunks:List[Chunk]) {
     val data = entity match {
       case Some(BodyEntity(data, contentType)) => Some(HttpEntity(ContentType(MediaType.custom(contentType)), data))
       case Some(FileEntity(fileName, contentType)) => Some(HttpEntity(ContentType(MediaType.custom(contentType)), HttpData.fromFile(fileName)))
@@ -104,6 +107,10 @@ object Model {
     def sendView(view:View):ResponseBuilder
     def header(key:String, value:String):ResponseBuilder
     def cookie(key:String, value:String):ResponseBuilder
+    /**
+     * This will force Encoding to chunked!
+     */
+    def addChunk[T](chunk:Future[T], contentType:String = "")(implicit conv:(T)=>Array[Byte]):ResponseBuilder
     def build():Response
   }
 
@@ -111,6 +118,7 @@ object Model {
 
     private var headers:Map[String, String] = Map()
     private var cookie:Map[String, String] = Map()
+    private var chunks:List[Chunk] = List()
 
     private var entity:Option[Entity] = error match {
       // TODO make this a setting, cause we dont want exceptions in production.
@@ -146,13 +154,21 @@ object Model {
       this
     }
 
-    override def build():Response = new Response(code, entity, headers, cookie)
+    override def addChunk[T](chunk: Future[T], contentType:String = "")(implicit conv: (T) => Array[Byte]): ResponseBuilder = {
+      header("Transfer-Encoding", "chunked")
+      chunks = chunks ++ List(new Chunk(chunk.map(conv(_)), contentType))
+      this
+    }
+
+    override def build():Response = new Response(code, entity, headers, cookie, chunks)
   }
 
   sealed trait Entity {}
   case class BodyEntity(data:Array[Byte], contentType:String) extends Entity
   case class FileEntity(fileName:String, contentType:String) extends Entity
   case class ViewEntity(view:View) extends Entity
+
+  case class Chunk(body:Future[Array[Byte]], contentType:String)
 
   object Responses {
 

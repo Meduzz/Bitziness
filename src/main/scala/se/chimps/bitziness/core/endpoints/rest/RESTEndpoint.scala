@@ -98,21 +98,3 @@ private class RestEndpointBuilderImpl(val endpoint:ActorRef) extends RestEndpoin
 
 case class EndpointDefinition(host:Host, routes:Map[String, Controller])
 case class Routes(routes:Map[String, Controller])
-
-trait SetupRestEndpoint extends (RestEndpointBuilder=>ActorRef) {
-  def apply(builder:RestEndpointBuilder):ActorRef
-}
-
-object SetupRestEndpoint {
-  def apply(m:(RestEndpointBuilder)=>EndpointDefinition)(implicit system:ActorSystem):SetupRestEndpoint = new SetupRestEndpoint {
-    override def apply(builder: RestEndpointBuilder): ActorRef = {
-      val definition = m(builder)
-
-      val handler = system.actorOf(Props(classOf[RestHandler], definition.host), definition.host.toString)
-
-      handler ! Routes(definition.routes)
-
-      handler
-    }
-  }
-}

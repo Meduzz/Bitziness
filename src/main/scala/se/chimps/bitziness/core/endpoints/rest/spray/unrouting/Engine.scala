@@ -1,11 +1,15 @@
 package se.chimps.bitziness.core.endpoints.rest.spray.unrouting
 
+import akka.actor.ActorRef
+import akka.dispatch.Futures
+import akka.pattern.PipeToSupport
 import org.slf4j.LoggerFactory
 import se.chimps.bitziness.core.endpoints.rest.{Routes}
-import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.{Response, RequestImpl}
+import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.{Chunk, Request, Response, RequestImpl}
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.Responses.{Error, NotFound}
-import spray.http.{HttpMethods, HttpResponse, HttpRequest}
+import spray.http._
 
+import scala.annotation.tailrec
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Success, Failure, Try}
@@ -14,23 +18,49 @@ import scala.util.matching.Regex
 /**
  * A base trait with all the code necessary to route requests.
  */
-trait Engine {
+trait Engine extends PipeToSupport {
   private var actions:Map[String, Map[Regex, ActionMetadata]] = Map()
   private val log = LoggerFactory.getLogger(getClass.getName)
 
-  protected def request(req:HttpRequest):Future[HttpResponse] = {
-    val uri = req.uri.path.toString()
-    hasMatch(req) match {
-      case Some(actionMetadata:ActionMetadata) =>
-        Try(actionMetadata.action(new RequestImpl(req, actionMetadata))) match {
-          case Success(f:Future[Response]) => f.map(_.toResponse())
-          case Failure(e:Throwable) => Future(fiveZeroZero(uri, e).toResponse())
-      }
-      case None => Future(fourZeroFour(uri).toResponse())
+  protected def request(action:Action, req:Request):Future[Response] = {
+    Try(action(req)) match {
+        case Success(f:Future[Response]) => f
+        case Failure(e:Throwable) => Future(fiveZeroZero(req.path, e))
     }
   }
 
-  private def hasMatch(req:HttpRequest):Option[ActionMetadata] = {
+  protected def handle(req:HttpRequest, sender:ActorRef) = {
+    val uri = req.uri.path.toString()
+    hasMatch(req) match {
+      case Some(actionMetadata:ActionMetadata) => {
+        request(actionMetadata.action, new RequestImpl(req, actionMetadata)).onComplete {
+          case Success(response:Response) => {
+            if (response.chunks.size == 0) {
+              sender ! response.toResponse()
+            } else {
+              sender ! ChunkedResponseStart(response.toResponse())
+              handleResponseChunks(response.chunks, sender)
+            }
+          }
+          case Failure(e) => sender ! fiveZeroZero(uri, e).toResponse()
+        }
+      }
+      case None => sender ! fourZeroFour(uri).toResponse()
+    }
+  }
+
+  private def handleResponseChunks(chunks:List[Chunk], sender:ActorRef): Unit = {
+
+    chunks.head.body.map(MessageChunk(_)).pipeTo(sender)
+
+    if (chunks.size > 1) {
+      handleResponseChunks(chunks.tail, sender)
+    } else {
+      sender ! ChunkedMessageEnd()
+    }
+  }
+
+  protected def hasMatch(req:HttpRequest):Option[ActionMetadata] = {
     val uri = req.uri.path.toString()
 
     req.method match {
@@ -53,11 +83,11 @@ trait Engine {
     }
   }
 
-  private def fourZeroFour(missingPath:String):Response = {
+  protected def fourZeroFour(missingPath:String):Response = {
     NotFound(s"Nobody home at ${missingPath}.").build()
   }
 
-  private def fiveZeroZero(errorPath:String, error:Throwable):Response = {
+  protected def fiveZeroZero(errorPath:String, error:Throwable):Response = {
     Error(errorPath, error).build()
   }
 

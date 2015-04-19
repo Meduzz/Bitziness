@@ -3,11 +3,12 @@ package se.chimps.bitziness.core.endpoints.rest.spray.unrouting
 import akka.testkit.TestProbe
 import se.chimps.bitziness.core.endpoints.rest.Routes
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.Controller
+import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.{FileEntity, BodyEntity, Response, RequestImpl}
 import spray.http._
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.{Failure, Success}
+import scala.util.{Try, Failure, Success}
 
 /**
  * A smallish trait to help test controllers.
@@ -56,6 +57,19 @@ trait ControllerTesting extends Engine {
         }
       }
       case Failure(e) => throw e
+    }
+  }
+
+  // TODO rewrite this to verify the response in an actorProbe.
+  def request(req:HttpRequest):Future[HttpResponse] = {
+    val uri = req.uri.path.toString()
+    hasMatch(req) match {
+      case Some(actionMetadata: ActionMetadata) =>
+        Try(actionMetadata.action(new RequestImpl(req, actionMetadata))) match {
+          case Success(f: Future[Response]) => f.map(_.toResponse())
+          case Failure(e: Throwable) => Future(fiveZeroZero(uri, e).toResponse())
+        }
+      case None => Future(fourZeroFour(uri).toResponse())
     }
   }
 }
