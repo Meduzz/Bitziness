@@ -6,6 +6,8 @@ import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.{Response, 
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.Responses.{Error, NotFound}
 import spray.http.{HttpMethods, HttpResponse, HttpRequest}
 
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Success, Failure, Try}
 import scala.util.matching.Regex
 
@@ -16,15 +18,16 @@ trait Engine {
   private var actions:Map[String, Map[Regex, ActionMetadata]] = Map()
   private val log = LoggerFactory.getLogger(getClass.getName)
 
-  protected def request(req:HttpRequest):HttpResponse = {
+  protected def request(req:HttpRequest):Future[HttpResponse] = {
     val uri = req.uri.path.toString()
     hasMatch(req) match {
       case Some(actionMetadata:ActionMetadata) =>
         Try(actionMetadata.action(new RequestImpl(req, actionMetadata))) match {
-          case Success(r:Response) => r.toResponse()
-          case Failure(e:Throwable) => fiveZeroZero(uri, e).toResponse()
+          case Success(f:Future[Response]) => f.map(_.toResponse())
+          case Success(r:Response) => Future(r.toResponse())
+          case Failure(e:Throwable) => Future(fiveZeroZero(uri, e).toResponse())
       }
-      case None => fourZeroFour(uri).toResponse()
+      case None => Future(fourZeroFour(uri).toResponse())
     }
   }
 
