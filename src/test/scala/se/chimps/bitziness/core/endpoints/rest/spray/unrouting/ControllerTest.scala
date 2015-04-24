@@ -7,33 +7,38 @@ import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.{Contro
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.Request
 import spray.http._
 
+import scala.concurrent.Future
+
 class ControllerTest extends FunSuite with TestKitBase with ControllerTesting {
   lazy val controller = new MyController
-  lazy val probe = TestProbe()
+  lazy val serviceProbe = TestProbe()
+  lazy val connectionProbe = TestProbe()
 
   implicit lazy val system = ActorSystem()
 
   test("the controller should respond nicely") {
-    assertResponse(200, "Hello!", request(get("/")), "No gentle Hello!...")
-    assertResponse(404, "Nobody home at /spam.", request(get("/spam")), "Expected a 404...")
-    assertResponse(200, "asdf", request(post("/gringo", "asdf")))
-    assertResponse(200, "They are all here!", request(get("/a/b/c/d")), "No one home at /a/b/c/d")
-    assertResponse(200, "q/q", request(get("/q/q")), "First match should be returned when multiple actions match.")
-    assertResponse(200, "q/:q", request(get("/q/:q")), "'Regexes' are valid paths.")
-    assertResponse(200, "spam", request(get("/test/spam")), "PathParams did not work as expected.")
-    assertResponse(200, "Hello a and b!", request(get("/hello/a/and/b")), "A more complicated path failed.")
-    assertResponse(200, "Your id #300.", request(post("/form/400", "id=300").withHeaders(HttpHeaders.`Content-Type`(ContentType(MediaType.custom("application/x-www-form-urlencoded"))))))
-    assertResponse(200, "Your id #400.", request(post("/form/400", "{text:1}").withHeaders(HttpHeaders.`Content-Type`(ContentType(MediaType.custom("application/json"))))))
-    assertResponse(200, null, request(get("/headers")), "Headers blew up.")
-    assertResponse(200, "* {color:#AAA;}", request(get("/file")))
-    assertResponse(200, "file.ending", request(get("/static/file.ending")))
-    assertResponse(500, "<h1>An error occurred at", request(get("/crash")), "The crash, should crash successfully.")
+    assertResponse(200, List("Hello!"), get("/"), "No gentle Hello!...")
+    assertResponse(404, List("Nobody home at /spam."), get("/spam"), "Expected a 404...")
+    assertResponse(200, List("asdf"), post("/gringo", "asdf"))
+    assertResponse(200, List("They are all here!"), get("/a/b/c/d"), "No one home at /a/b/c/d")
+    assertResponse(200, List("q/q"), get("/q/q"), "First match should be returned when multiple actions match.")
+    assertResponse(200, List("q/:q"), get("/q/:q"), "'Regexes' are valid paths.")
+    assertResponse(200, List("spam"), get("/test/spam"), "PathParams did not work as expected.")
+    assertResponse(200, List("Hello a and b!"), get("/hello/a/and/b"), "A more complicated path failed.")
+    assertResponse(200, List("Your id #300."), post("/form/400", "id=300").withHeaders(HttpHeaders.`Content-Type`(ContentType(MediaType.custom("application/x-www-form-urlencoded")))))
+    assertResponse(200, List("Your id #400."), post("/form/400", "{text:1}").withHeaders(HttpHeaders.`Content-Type`(ContentType(MediaType.custom("application/json")))))
+    assertResponse(200, null, get("/headers"), "Headers blew up.")
+    assertResponse(200, List("* {color:#AAA;}"), get("/file"))
+    assertResponse(200, List("file.ending"), get("/static/file.ending"))
+    assertResponse(500, List("<h1>An error occurred at"), get("/crash"), "The crash, should crash successfully.")
+    assertResponse(200, List("this", "rocks"), get("/chunked"), "Little bitty chunks, were nowhere to be found!")
   }
 
 }
 
 class MyController extends Controller {
   import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.Responses._
+  import scala.concurrent.ExecutionContext.Implicits.global
 
   def apply(service:ActorRef)= {
     get("/", Action {(req:Request) => Ok().sendEntity("Hello!").build() })
@@ -57,6 +62,7 @@ class MyController extends Controller {
     get("/headers", Action(() => Ok().header("Date", "2014-01-01T00:00:00").header("Server", "spam").header("Connection", "ok").build()))
     get("/file", Action(() => Ok().sendFile(getClass.getResource("/static.css").getPath, "text/stylesheet").build()))
     get("/static/:file.:ending", Action(req => Ok().sendEntity(s"${req.params("file").get}.${req.params("ending").get}").build()))
+    get("/chunked", Action(req => Ok().addChunk(Future("this")).addChunk(Future("rocks")).build()))
   }
 
   implicit def bytes2Str(bytes:Array[Byte]):Option[String] = Some(new String(bytes, "utf-8"))

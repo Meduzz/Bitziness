@@ -49,11 +49,14 @@ trait Engine extends PipeToSupport {
     }
   }
 
+  @tailrec
   private def handleResponseChunks(chunks:List[Chunk], sender:ActorRef): Unit = {
 
-    chunks.head.body.map(MessageChunk(_)).pipeTo(sender)
+    if (chunks.size > 0) {
+      chunks.head.body.map(MessageChunk(_)).pipeTo(sender)
+    }
 
-    if (chunks.size > 1) {
+    if (chunks.tail.size > 0) {
       handleResponseChunks(chunks.tail, sender)
     } else {
       sender ! ChunkedMessageEnd()

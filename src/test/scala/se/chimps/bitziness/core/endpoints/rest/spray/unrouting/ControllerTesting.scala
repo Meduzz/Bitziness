@@ -1,5 +1,7 @@
 package se.chimps.bitziness.core.endpoints.rest.spray.unrouting
 
+import java.util.concurrent.TimeUnit
+
 import akka.testkit.TestProbe
 import se.chimps.bitziness.core.endpoints.rest.Routes
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.Controller
@@ -8,6 +10,7 @@ import spray.http._
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
 import scala.util.{Try, Failure, Success}
 
 /**
@@ -16,9 +19,10 @@ import scala.util.{Try, Failure, Success}
  */
 trait ControllerTesting extends Engine {
   def controller:Controller
-  def probe:TestProbe
+  def serviceProbe:TestProbe
+  def connectionProbe:TestProbe
 
-  controller(probe.ref)
+  controller(serviceProbe.ref)
   addActions(Routes(Map("" -> controller)))
 
   def buildRequest(method:HttpMethod, uri:String, body:Option[String]):HttpRequest = {
@@ -44,19 +48,48 @@ trait ControllerTesting extends Engine {
     buildRequest(HttpMethods.DELETE, uri, None)
   }
 
-  def assertResponse(status:Int, body:String, response:Future[HttpResponse], clue:String = "") = {
+  def assertResponse(status:Int, body:List[String], request:HttpRequest, clue:String = "") = {
 //    println(response.entity.asString(HttpCharsets.`UTF-8`))
-    response.onComplete {
-      case Success(res) => {
-        res.entity.isEmpty // lazy issue?
-        assert(res.status.intValue == status, clue)
-        if (body == null) {
-          assert(res.entity.isEmpty)
-        } else {
-          assert(res.entity.asString(HttpCharsets.`UTF-8`).startsWith(body), clue)
+    handle(request, connectionProbe.ref)
+
+    if (body != null) {
+      val parts:List[String] = if (body.size > 1) { List("") ++ body ++ List("") } else { body }
+
+      parts.foreach { b =>
+        connectionProbe.expectMsgPF(Duration(3L, TimeUnit.SECONDS), "No message can do...") {
+          case res: HttpResponse => {
+            assert(res.status.intValue == status, clue)
+            if (body == null) {
+              assert(res.entity.isEmpty)
+            } else {
+//            println(res.entity.asString(HttpCharsets.`UTF-8`))
+              assert(res.entity.asString(HttpCharsets.`UTF-8`).startsWith(b), clue)
+            }
+          }
+          case start: ChunkedResponseStart => {
+            assert(start.message.status.intValue == status, "Chunked status was not correct.")
+          }
+          case chunk: MessageChunk => {
+//            println(chunk.data.asString(HttpCharsets.`UTF-8`))
+            assert(!chunk.data.isEmpty, "MessageChunk had no body!")
+            assert(chunk.data.asString(HttpCharsets.`UTF-8`).equals(b), s"Chunk was not $b, but ${chunk.data.asString(HttpCharsets.`UTF-8`)}.")
+          }
+          case end: ChunkedMessageEnd => {
+          }
         }
       }
-      case Failure(e) => throw e
+    } else {
+      connectionProbe.expectMsgPF(Duration(3L, TimeUnit.SECONDS), "No message can do... bodyless version") {
+        case res: HttpResponse => {
+          assert(res.status.intValue == status, clue)
+          if (body == null) {
+            assert(res.entity.isEmpty)
+          } else {
+//          println(res.entity.asString(HttpCharsets.`UTF-8`))
+            assert(res.entity.asString(HttpCharsets.`UTF-8`).startsWith(body.head), clue)
+          }
+        }
+      }
     }
   }
 
