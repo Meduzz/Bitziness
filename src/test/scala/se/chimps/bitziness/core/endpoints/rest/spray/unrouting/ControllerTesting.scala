@@ -92,17 +92,4 @@ trait ControllerTesting extends Engine {
       }
     }
   }
-
-  // TODO rewrite this to verify the response in an actorProbe.
-  def request(req:HttpRequest):Future[HttpResponse] = {
-    val uri = req.uri.path.toString()
-    hasMatch(req) match {
-      case Some(actionMetadata: ActionMetadata) =>
-        Try(actionMetadata.action(new RequestImpl(req, actionMetadata))) match {
-          case Success(f: Future[Response]) => f.map(_.toResponse())
-          case Failure(e: Throwable) => Future(fiveZeroZero(uri, e).toResponse())
-        }
-      case None => Future(fourZeroFour(uri).toResponse())
-    }
-  }
 }
