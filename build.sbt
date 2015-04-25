@@ -1,6 +1,6 @@
 name := "Bitziness"
 
-version := "0.4-SNAPSHOT"
+version := "0.5-SNAPSHOT"
 
 scalaVersion := "2.11.1"
 
