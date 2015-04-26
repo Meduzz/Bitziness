@@ -6,6 +6,6 @@ package se.chimps.bitziness.core.generic
  */
 trait ErrorMapping {
   def errorMapping:PartialFunction[Throwable, Any] = {
-    case e:Throwable => e
+    case e:Throwable => throw e
   }
 }

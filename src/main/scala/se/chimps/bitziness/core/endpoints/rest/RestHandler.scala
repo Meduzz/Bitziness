@@ -18,7 +18,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class RestHandler(val host:Host) extends Actor with Engine with PipeToSupport {
   implicit val system = context.system
   private val log = LoggerFactory.getLogger(getClass.getName)
-  private var connection:ActorRef = _
 
   override def receive: Receive = {
     case connected:Connected => sender() ! Register(self)
@@ -26,8 +25,12 @@ class RestHandler(val host:Host) extends Actor with Engine with PipeToSupport {
     case route:Routes => addActions(route)
     case bound:Bound => // do naathing.
     case CommandFailed(_:Bind) => throw new RuntimeException(s"Could not bind to ${host.toString}.")
-    case x => println(s"RestHandler got an unhandled message ${x}.")
+    case x => log.debug("RestHandler got an unhandled message {}.", x)
   }
 
-  IO(Http) ! Http.Bind(self, host.host, host.port)
+  @throws[Exception](classOf[Exception])
+  override def preStart(): Unit = {
+    log.debug(s"Connection actor for ${host.toString} started.")
+    IO(Http) ! Http.Bind(self, host.host, host.port)
+  }
 }

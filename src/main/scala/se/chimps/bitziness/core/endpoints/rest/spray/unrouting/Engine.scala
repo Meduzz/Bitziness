@@ -1,7 +1,6 @@
 package se.chimps.bitziness.core.endpoints.rest.spray.unrouting
 
 import akka.actor.ActorRef
-import akka.dispatch.Futures
 import akka.pattern.PipeToSupport
 import org.slf4j.LoggerFactory
 import se.chimps.bitziness.core.endpoints.rest.{Routes}
@@ -99,6 +98,7 @@ trait Engine extends PipeToSupport {
   }
 
   def addActions(routes:Routes):Unit = {
+    log.trace("Adding {} new routes.", routes.routes.size)
     var raw = Map[String, Map[String, Action]]()
 
     routes.routes.foreach(ctrl => {
@@ -121,8 +121,8 @@ trait Engine extends PipeToSupport {
     })
 
     regexilized.foreach {
-      case (path, routes) => {
-        val existingRoutes = actions.getOrElse(path, Map()) ++ routes
+      case (path, internalRoutes) => {
+        val existingRoutes = actions.getOrElse(path, Map()) ++ internalRoutes
         actions = actions ++ Map(path -> existingRoutes)
       }
     }

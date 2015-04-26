@@ -9,7 +9,7 @@ import se.chimps.bitziness.core.{Host, Endpoint}
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.{Controller}
 
 import scala.concurrent.duration.FiniteDuration
-import scala.util.{Success, Failure}
+import scala.util.{Try, Success, Failure}
 
 /**
  * Main trait for RESTful endpoints.
@@ -36,33 +36,24 @@ trait RESTEndpoint extends Endpoint with ReceiveChain {
 
   override def receive:Receive = receives
 
-  ActorLock(definition.host.toString) match {
-    case Some(bool) => {
-      log.trace("Missed lock, waiting...")
-      while (bool.get) {
-        log.trace("..wating")
+  @throws[Exception](classOf[Exception])
+  override def preStart(): Unit = {
+    Try(context.system.actorOf(Props(classOf[RestHandler], definition.host), definition.host.toString)) match {
+      case Success(actor) => {
+        restEndpoint = actor
+        actor ! Routes(definition.routes)
       }
-      log.trace(".. received lock.")
-      context.system
-        .actorSelection(s"/user/${definition.host.toString}")
-        .resolveOne(FiniteDuration(1L, TimeUnit.SECONDS)).onComplete {
+      case Failure(e) => {
+        context.system
+          .actorSelection(s"/user/${definition.host.toString}")
+          .resolveOne(FiniteDuration(1L, TimeUnit.SECONDS)).onComplete {
           case Success(actor) => {
             restEndpoint = actor
             actor ! Routes(definition.routes)
           }
-          case Failure(e:Throwable) => throw e
+          case Failure(g: Throwable) => log.error("Found no actur, found an error instead.", g)
+        }
       }
-    }
-    case None => {
-      log.trace("Got lock.")
-      restEndpoint = context.system.actorOf(Props(classOf[RestHandler], definition.host), definition.host.toString)
-      val lock = ActorLock.get(definition.host.toString)
-      log.trace(".. returning lock.")
-      while (!lock.compareAndSet(true, false)) {
-        log.trace("failed, retrying")
-      }
-      log.trace("lock returned")
-      restEndpoint ! Routes(definition.routes)
     }
   }
 }
