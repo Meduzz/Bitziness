@@ -1,6 +1,7 @@
 package se.chimps.bitziness.core.endpoints.rest.spray.unrouting
 
 import akka.actor.{ActorNotFound, ActorSystem, ActorRef}
+import akka.event.Logging
 import akka.testkit.{TestProbe, TestKitBase}
 import org.scalatest.FunSuite
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.{Controller}
@@ -10,11 +11,13 @@ import spray.http._
 import scala.concurrent.Future
 
 class ControllerTest extends FunSuite with TestKitBase with ControllerTesting {
+  implicit lazy val system = ActorSystem()
+
+  val log = Logging(system, getClass.getName)
+
   lazy val controller = new MyController
   lazy val serviceProbe = TestProbe()
   lazy val connectionProbe = TestProbe()
-
-  implicit lazy val system = ActorSystem()
 
   test("the controller should respond nicely") {
     assertResponse(200, List("Hello!"), get("/"), "No gentle Hello!...")

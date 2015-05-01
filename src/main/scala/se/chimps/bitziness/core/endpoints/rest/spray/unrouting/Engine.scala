@@ -1,8 +1,8 @@
 package se.chimps.bitziness.core.endpoints.rest.spray.unrouting
 
-import akka.actor.ActorRef
+import akka.actor.{ActorSystem, ActorRef}
+import akka.event.{LoggingAdapter, Logging}
 import akka.pattern.PipeToSupport
-import org.slf4j.LoggerFactory
 import se.chimps.bitziness.core.endpoints.rest.{Routes}
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.{Chunk, Request, Response, RequestImpl}
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.Responses.{Error, NotFound}
@@ -18,8 +18,9 @@ import scala.util.matching.Regex
  * A base trait with all the code necessary to route requests.
  */
 trait Engine extends PipeToSupport {
+  def log:LoggingAdapter
+
   private var actions:Map[String, Map[Regex, ActionMetadata]] = Map()
-  private val log = LoggerFactory.getLogger(getClass.getName)
 
   protected def request(action:Action, req:Request):Future[Response] = {
     Try(action(req)) match {
@@ -98,7 +99,7 @@ trait Engine extends PipeToSupport {
   }
 
   def addActions(routes:Routes):Unit = {
-    log.trace("Adding {} new routes.", routes.routes.size)
+    log.debug("Adding {} new routes.", routes.routes.size)
     var raw = Map[String, Map[String, Action]]()
 
     routes.routes.foreach(ctrl => {

@@ -3,10 +3,10 @@ package se.chimps.bitziness.core.endpoints.rest
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
-import org.slf4j.LoggerFactory
-import se.chimps.bitziness.core.generic.{ActorLock, ReceiveChain}
+import akka.event.Logging
+import se.chimps.bitziness.core.generic.ReceiveChain
 import se.chimps.bitziness.core.{Host, Endpoint}
-import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.{Controller}
+import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.Controller
 
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Try, Success, Failure}
@@ -17,7 +17,7 @@ import scala.util.{Try, Success, Failure}
 trait RESTEndpoint extends Endpoint with ReceiveChain {
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  private val log = LoggerFactory.getLogger(getClass.getName)
+  private val log = Logging(context.system, getClass.getName)
 
   var restEndpoint:ActorRef = _
 
@@ -51,7 +51,7 @@ trait RESTEndpoint extends Endpoint with ReceiveChain {
             restEndpoint = actor
             actor ! Routes(definition.routes)
           }
-          case Failure(g: Throwable) => log.error("Found no actur, found an error instead.", g)
+          case Failure(g: Throwable) => log.error("Found no actor, found an error instead.", g)
         }
       }
     }

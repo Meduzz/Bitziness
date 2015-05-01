@@ -3,6 +3,7 @@ package example
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorRef
+import akka.event.Logging
 import akka.util.Timeout
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Action
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.Controller
@@ -12,7 +13,7 @@ import se.chimps.bitziness.core.endpoints.rest.{EndpointDefinition, RestEndpoint
 import se.chimps.bitziness.core.generic.LocalSession.LocalSessionFactory
 import se.chimps.bitziness.core.generic.{SessionFactory, SessionSupport}
 import se.chimps.bitziness.core.generic.Waitable._
-import se.chimps.bitziness.core.{Service}
+import se.chimps.bitziness.core.Service
 import akka.pattern._
 import scala.concurrent.ExecutionContext.global
 
@@ -29,6 +30,7 @@ class PingService extends Service {
 
 class PingEndpoint(val service:ActorRef) extends RESTEndpoint {
   implicit val executor = global
+  val log = Logging(context.system, getClass.getName)
 
   override def configureRestEndpoint(builder:RestEndpointBuilder):EndpointDefinition = {
     healthCheck("PingEndpoint", () => 1==1)
@@ -42,6 +44,7 @@ class PingEndpoint(val service:ActorRef) extends RESTEndpoint {
     case s:String =>
       implicit val timeout = Timeout(3l, TimeUnit.SECONDS)
       val sender:ActorRef = context.sender()
+      log.info("Pinging service")
       val pong = (service ? s.toUpperCase).get[String].toLowerCase
       sender ! pong
   }

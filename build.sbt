@@ -16,6 +16,8 @@ libraryDependencies += "com.typesafe.akka" %% "akka-cluster" % "2.3.7"
 
 libraryDependencies += "com.typesafe.akka" %% "akka-agent" % "2.3.7"
 
+libraryDependencies += "com.typesafe.akka" %% "akka-slf4j" % "2.3.7"
+
 libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % "2.3.7" % "test"
 
 libraryDependencies += "com.rabbitmq" % "amqp-client" % "3.2.2"
