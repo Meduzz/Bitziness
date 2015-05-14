@@ -96,7 +96,7 @@ object Model {
 
     // TODO make expire an setting and an optional param when the cookie are defined.
     private[rest] def toResponse(): HttpResponse = HttpResponse(code, data, heads ++ cookie
-      .map(f => HttpHeaders.`Set-Cookie`(HttpCookie(name = f._1, content = f._2, httpOnly = true, expires = Some(DateTime(0L)))))
+      .map(f => HttpHeaders.`Set-Cookie`(HttpCookie(name = f._1, content = f._2, httpOnly = true)))
       .toSeq)
   }
 
