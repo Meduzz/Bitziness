@@ -68,13 +68,17 @@ class PingController(val endpoint:ActorRef) extends Controller with SessionSuppo
       Ok().sendView(Jade4j.classpath("templates/world.jade", Map("world" -> req.params("world").getOrElse("failed")))).build()
     })
     get("/cookie", Action { req =>
-      val Seq(key, value, view) = req.params("key", "value", "view")
+      val Seq(key, value, view, delete) = req.params("key", "value", "view", "delete")
       val cookie = req.cookie(view.getOrElse(""))
 
       var resp = Ok().sendView(Scalate("/templates/cookie.jade", Map("cookie" -> cookie.getOrElse(""), "key" -> view.getOrElse(""), "title" -> "Cookies")))
 
       if (key.isDefined && value.isDefined) {
         resp.cookie(key.get, value.get)
+      }
+
+      if (delete.isDefined) {
+        resp.cookie(key = delete.get, value = "", expire = Some(1234L))
       }
 
       resp.build()

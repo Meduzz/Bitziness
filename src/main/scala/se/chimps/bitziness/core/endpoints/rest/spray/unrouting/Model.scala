@@ -76,7 +76,7 @@ object Model {
     override def cookie(key:String):Option[String] = request.cookies.find(c => c.name.equals(key)).map(c => c.content)
   }
 
-  case class Response(code:Int, entity:Option[Entity], headers:Map[String, String], cookie:Map[String, String], chunks:List[Chunk]) {
+  case class Response(code:Int, entity:Option[Entity], headers:Map[String, String], cookie:List[Cookie], chunks:List[Chunk]) {
     val data = entity match {
       case Some(BodyEntity(data, contentType)) => Some(HttpEntity(ContentType(MediaType.custom(contentType)), data))
       case Some(FileEntity(fileName, contentType)) => Some(HttpEntity(ContentType(MediaType.custom(contentType)), HttpData.fromFile(fileName)))
@@ -94,9 +94,9 @@ object Model {
       case (k: String, v: String) => RawHeader(k, v)
     }.toList
 
-    // TODO make expire an setting and an optional param when the cookie are defined.
+    // TODO encrypt cookies?
     private[rest] def toResponse(): HttpResponse = HttpResponse(code, data, heads ++ cookie
-      .map(f => HttpHeaders.`Set-Cookie`(HttpCookie(name = f._1, content = f._2, httpOnly = true)))
+      .map(f => HttpHeaders.`Set-Cookie`(HttpCookie(name = f.key, content = f.value, httpOnly = true, path = f.path, expires = f.expire.map(DateTime(_)))))
       .toSeq)
   }
 
@@ -106,7 +106,7 @@ object Model {
     def sendFile(file:String, contentType:String):ResponseBuilder
     def sendView(view:View):ResponseBuilder
     def header(key:String, value:String):ResponseBuilder
-    def cookie(key:String, value:String):ResponseBuilder
+    def cookie(key:String, value:String, path:Option[String] = Some("/"), expire:Option[Long] = None):ResponseBuilder
     /**
      * This will force Encoding to chunked!
      */
@@ -117,7 +117,7 @@ object Model {
   class ResponseBuilderImpl(val code:Int = 200, val msg:Option[String] = None, val error:Option[Throwable] = None) extends ResponseBuilder {
 
     private var headers:Map[String, String] = Map()
-    private var cookie:Map[String, String] = Map()
+    private var cookie:List[Cookie] = List()
     private var chunks:List[Chunk] = List()
 
     private var entity:Option[Entity] = error match {
@@ -149,8 +149,8 @@ object Model {
       this
     }
 
-    override def cookie(key: String, value: String): ResponseBuilder = {
-      cookie = cookie ++ Map(key -> value)
+    override def cookie(key: String, value: String, path:Option[String] = Some("/"), expire:Option[Long] = None): ResponseBuilder = {
+      cookie = cookie ++ List(Cookie(key, value, path, expire))
       this
     }
 
@@ -169,6 +169,8 @@ object Model {
   case class ViewEntity(view:View) extends Entity
 
   case class Chunk(body:Future[Array[Byte]], contentType:String)
+
+  case class Cookie(key:String, value:String, path:Option[String], expire:Option[Long])
 
   object Responses {
 
