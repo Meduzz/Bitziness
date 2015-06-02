@@ -227,6 +227,12 @@ object Model {
         new ResponseBuilderImpl(501, Some("TODO"))
       }
     }
+
+    object BadRequest {
+      def apply():ResponseBuilder = {
+        new ResponseBuilderImpl(400, Some("Bad request"))
+      }
+    }
   }
 
   implicit def str2Date(in:String):Str2Date = {
