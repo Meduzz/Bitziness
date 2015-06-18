@@ -3,15 +3,11 @@ package se.chimps.bitziness.core.endpoints.rest.spray.unrouting
 import java.util.concurrent.TimeUnit
 
 import akka.testkit.TestProbe
-import se.chimps.bitziness.core.endpoints.rest.Routes
+import se.chimps.bitziness.core.endpoints.rest.{EndpointDefinition}
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.Controller
-import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.{FileEntity, BodyEntity, Response, RequestImpl}
 import spray.http._
 
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
-import scala.util.{Try, Failure, Success}
 
 /**
  * A smallish trait to help test controllers.
@@ -21,9 +17,6 @@ trait ControllerTesting extends Engine {
   def controller:Controller
   def serviceProbe:TestProbe
   def connectionProbe:TestProbe
-
-  controller(serviceProbe.ref)
-  addActions(Routes(Map("" -> controller)))
 
   def buildRequest(method:HttpMethod, uri:String, body:Option[String]):HttpRequest = {
     HttpRequest(method, Uri(uri), List(), body match {
@@ -71,6 +64,7 @@ trait ControllerTesting extends Engine {
           }
           case chunk: MessageChunk => {
 //            println(chunk.data.asString(HttpCharsets.`UTF-8`))
+            // TODO there can be out of order delivery here...
             assert(!chunk.data.isEmpty, "MessageChunk had no body!")
             assert(chunk.data.asString(HttpCharsets.`UTF-8`).equals(b), s"Chunk was not $b, but ${chunk.data.asString(HttpCharsets.`UTF-8`)}.")
           }
@@ -92,4 +86,7 @@ trait ControllerTesting extends Engine {
       }
     }
   }
+
+  controller(serviceProbe.ref)
+  addActions(EndpointDefinition(null, Map("" -> controller)))
 }

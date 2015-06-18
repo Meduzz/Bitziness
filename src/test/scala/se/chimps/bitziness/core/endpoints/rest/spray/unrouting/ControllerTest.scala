@@ -1,10 +1,10 @@
 package se.chimps.bitziness.core.endpoints.rest.spray.unrouting
 
-import akka.actor.{ActorNotFound, ActorSystem, ActorRef}
+import akka.actor.{ActorRef, ActorSystem}
 import akka.event.Logging
-import akka.testkit.{TestProbe, TestKitBase}
+import akka.testkit.{TestKitBase, TestProbe}
 import org.scalatest.FunSuite
-import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.{Controller}
+import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.Controller
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.Request
 import spray.http._
 
@@ -13,7 +13,7 @@ import scala.concurrent.Future
 class ControllerTest extends FunSuite with TestKitBase with ControllerTesting {
   implicit lazy val system = ActorSystem()
 
-  val log = Logging(system, getClass.getName)
+  lazy val log = Logging(system, getClass.getName)
 
   lazy val controller = new MyController
   lazy val serviceProbe = TestProbe()
@@ -35,6 +35,7 @@ class ControllerTest extends FunSuite with TestKitBase with ControllerTesting {
     assertResponse(200, List("file.ending"), get("/static/file.ending"))
     assertResponse(500, List("<h1>An error occurred at"), get("/crash"), "The crash, should crash successfully.")
     assertResponse(200, List("this", "rocks"), get("/chunked"), "Little bitty chunks, were nowhere to be found!")
+    assertResponse(200, List("has.key"), get("/specull/has.key"), "Specull was not that specull!")
   }
 
 }
@@ -66,7 +67,6 @@ class MyController extends Controller {
     get("/file", Action(() => Ok().sendFile(getClass.getResource("/static.css").getPath, "text/stylesheet").build()))
     get("/static/:file.:ending", Action(req => Ok().sendEntity(s"${req.params("file").get}.${req.params("ending").get}").build()))
     get("/chunked", Action(req => Ok().addChunk(Future("this")).addChunk(Future("rocks")).build()))
+    get("/specull/:key", Action(req => Ok().sendEntity(req.params("key").get).build()), Map("key" -> "([a-z\\.]+)"))
   }
-
-  implicit def bytes2Str(bytes:Array[Byte]):Option[String] = Some(new String(bytes, "utf-8"))
 }

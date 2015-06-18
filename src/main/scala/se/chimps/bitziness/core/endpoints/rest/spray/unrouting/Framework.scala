@@ -1,27 +1,32 @@
 package se.chimps.bitziness.core.endpoints.rest.spray.unrouting
 
 import akka.actor.ActorRef
-import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.RequestImpl
-import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.Responses.{Error, NotFound}
-import spray.http._
 
 object Framework {
 
   trait Controller {
-    private[rest] var gets = Map[String, Action]()
-    private[rest] var posts = Map[String, Action]()
-    private[rest] var puts = Map[String, Action]()
-    private[rest] var deletes = Map[String, Action]()
+    private[rest] var actionDefinitions = List[ActionDefinition]()
 
     def apply(endpoint:ActorRef)
 
-    def get(uri:String, action:Action) = gets = gets ++ Map(uri -> action)
-    def post(uri:String, action:Action) = posts = posts ++ Map(uri -> action)
-    def put(uri:String, action:Action) = puts = puts ++ Map(uri -> action)
-    def delete(uri:String, action:Action) = deletes = deletes ++ Map(uri -> action)
+    def get(uri:String, action:Action, paramex:Map[String, String] = Map()) = http("GET", uri, action, paramex)
+    def post(uri:String, action:Action, paramex:Map[String, String] = Map()) = http("POST", uri, action, paramex)
+    def put(uri:String, action:Action, paramex:Map[String, String] = Map()) = http("PUT", uri, action, paramex)
+    def delete(uri:String, action:Action, paramex:Map[String, String] = Map()) = http("DELETE", uri, action, paramex)
 
-    implicit def str2Bytes(data:String):Array[Byte] = {
-      data.getBytes("utf-8")
+    /**
+     * Use this if your verb are not supported. But be warned, you are responsible for the correct response.
+     * @param verb the capitalized http verb (ex. GET)
+     * @param uri the uri /some/:uri
+     * @param action the action to execute when a request matches the uri.
+     * @param paramex this allows you to hook up your own regex to match parameters (ex. param1 -> ([0-9]+) to only catch digits...
+     */
+    def http(verb:String, uri:String, action:Action, paramex:Map[String, String] = Map()) = actionDefinitions = actionDefinitions ++ List(new ActionDefinition(verb, uri, action, paramex))
+
+    implicit def str2Bytes(data:String):Array[Byte] = data.getBytes("utf-8")
+    implicit def bytes2Str(data:Array[Byte]):Option[String] = data.length match {
+      case 0 => None
+      case _ => Some(new String(data, "utf-8"))
     }
   }
 

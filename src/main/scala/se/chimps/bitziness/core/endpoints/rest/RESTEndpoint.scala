@@ -26,13 +26,7 @@ trait RESTEndpoint extends Endpoint with ReceiveChain {
 
   def rest:Receive
 
-  def setup:Receive = {
-    case ActorIdentity(id, Some(actor)) => restEndpoint = actor; actor ! Routes(definition.routes)
-    case ActorIdentity(id, None) => restEndpoint = context.system.actorOf(Props(classOf[RestHandler], definition.host), definition.host.toString); restEndpoint ! Routes(definition.routes)
-  }
-
   registerReceive(rest)
-  registerReceive(setup)
 
   override def receive:Receive = receives
 
@@ -41,7 +35,7 @@ trait RESTEndpoint extends Endpoint with ReceiveChain {
     Try(context.system.actorOf(Props(classOf[RestHandler], definition.host), definition.host.toString)) match {
       case Success(actor) => {
         restEndpoint = actor
-        actor ! Routes(definition.routes)
+        actor ! definition
       }
       case Failure(e) => {
         context.system
@@ -49,7 +43,7 @@ trait RESTEndpoint extends Endpoint with ReceiveChain {
           .resolveOne(FiniteDuration(1L, TimeUnit.SECONDS)).onComplete {
           case Success(actor) => {
             restEndpoint = actor
-            actor ! Routes(definition.routes)
+            actor ! definition
           }
           case Failure(g: Throwable) => log.error("Found no actor, found an error instead.", g)
         }
@@ -88,4 +82,3 @@ private class RestEndpointBuilderImpl(val endpoint:ActorRef) extends RestEndpoin
 }
 
 case class EndpointDefinition(host:Host, routes:Map[String, Controller])
-case class Routes(routes:Map[String, Controller])

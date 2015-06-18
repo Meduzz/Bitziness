@@ -1,9 +1,9 @@
 package se.chimps.bitziness.core.endpoints.rest.spray.unrouting
 
-import akka.actor.{ActorSystem, ActorRef}
-import akka.event.{LoggingAdapter, Logging}
+import akka.actor.{ActorRef}
+import akka.event.{LoggingAdapter}
 import akka.pattern.PipeToSupport
-import se.chimps.bitziness.core.endpoints.rest.{Routes}
+import se.chimps.bitziness.core.endpoints.rest.EndpointDefinition
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.{Chunk, Request, Response, RequestImpl}
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.Responses.{Error, NotFound}
 import spray.http._
@@ -98,66 +98,29 @@ trait Engine extends PipeToSupport {
     msg.getBytes("utf-8")
   }
 
-  def addActions(routes:Routes):Unit = {
-    log.debug("Adding {} new routes.", routes.routes.size)
-    var raw = Map[String, Map[String, Action]]()
-
+  def addActions(routes:EndpointDefinition):Unit = {
     routes.routes.foreach(ctrl => {
       val root = ctrl._1
       val controller = ctrl._2
 
-      raw = raw ++ Map("GET" -> copyAndImproveMap(root, controller.gets, raw.getOrElse("GET", Map[String, Action]())))
-      raw = raw ++ Map("POST" -> copyAndImproveMap(root, controller.posts, raw.getOrElse("POST", Map[String, Action]())))
-      raw = raw ++ Map("PUT" -> copyAndImproveMap(root, controller.puts, raw.getOrElse("PUT", Map[String, Action]())))
-      raw = raw ++ Map("DELETE" -> copyAndImproveMap(root, controller.deletes, raw.getOrElse("DELETE", Map[String, Action]())))
-    })
-
-    var regexilized = Map[String, Map[Regex, ActionMetadata]]()
-
-    raw.foreach(actions => {
-      val method = actions._1
-      val methodActions = actions._2
-
-      regexilized = regexilized ++ Map(method -> mapToRegex(methodActions, Map[Regex, ActionMetadata]()))
-    })
-
-    regexilized.foreach {
-      case (path, internalRoutes) => {
-        val existingRoutes = actions.getOrElse(path, Map()) ++ internalRoutes
-        actions = actions ++ Map(path -> existingRoutes)
+      controller.actionDefinitions.map { definition =>
+        (definition.method -> createMetadata(s"$root${definition.path}", definition.action, definition.paramex))
+      }.foreach { meta =>
+        val verbActions = actions.getOrElse(meta._1, Map[Regex, ActionMetadata]()) ++ Map(meta._2.regex -> meta._2)
+        actions = actions ++ Map(meta._1 -> verbActions)
       }
-    }
-  }
-
-  private def copyAndImproveMap(root:String, source:Map[String, Action], target:Map[String, Action]):Map[String, Action] = {
-    var copy = target
-
-    source.foreach(actions => {
-      log.info("Adding new path: {}", root+actions._1)
-      copy = copy ++ Map(root+actions._1 -> actions._2)
     })
-
-    copy
   }
 
-  private def mapToRegex(source:Map[String, Action], target:Map[Regex, ActionMetadata]):Map[Regex, ActionMetadata] = {
-    var copy = target
-    source.foreach(act => {
-      val metadata = createMetadata(act._1, act._2)
-      copy = copy ++ Map(metadata.regex -> metadata)
-    })
-
-    copy
-  }
-
-  private def createMetadata(uri:String, action:Action):ActionMetadata = {
+  private def createMetadata(uri:String, action:Action, paramex:Map[String, String]):ActionMetadata = {
     val findPathParamsRegex = ":([a-zA-Z0-9]+)".r
     val pathParamsRegex = "(:[a-zA-Z0-9]+)".r
     val pathNames = findPathParamsRegex.findAllIn(uri).map(m => m.substring(1)).toList
-    val pathRegex = s"${pathParamsRegex.replaceAllIn(uri, "([a-zA-Z0-9]+)")}".r
+    val pathRegex = pathNames.foldLeft(uri)((url, name) => s"(:$name)".r.replaceAllIn(url, paramex.getOrElse(name, "([a-zA-Z0-9]+)"))).r
 
     new ActionMetadata(uri, action, pathRegex, pathNames)
   }
 }
 
 case class ActionMetadata(path:String, action:Action, regex:Regex, keyNames:List[String])
+case class ActionDefinition(method:String, path:String, action:Action, paramex:Map[String, String] = Map())

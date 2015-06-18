@@ -100,7 +100,6 @@ object Model {
       .toSeq)
   }
 
-
   trait ResponseBuilder {
     def sendEntity[T](entity:T, contentType:String = "text/html")(implicit conv:(T)=>Array[Byte]):ResponseBuilder
     def sendFile(file:String, contentType:String):ResponseBuilder
