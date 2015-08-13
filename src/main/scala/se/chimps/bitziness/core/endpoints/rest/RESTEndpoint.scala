@@ -4,8 +4,9 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import akka.event.Logging
+import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Host
 import se.chimps.bitziness.core.generic.ReceiveChain
-import se.chimps.bitziness.core.{Host, Endpoint}
+import se.chimps.bitziness.core.Endpoint
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.Controller
 
 import scala.concurrent.duration.FiniteDuration

@@ -35,3 +35,5 @@ libraryDependencies += "org.scalatra.scalate" %% "scalate-core" % "1.7.0"
 libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.0.13"
 
 libraryDependencies += "de.neuland-bfi" % "jade4j" % "0.4.2"
+
+libraryDependencies += "com.typesafe.akka" %% "akka-stream-experimental" % "1.0"

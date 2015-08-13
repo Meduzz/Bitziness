@@ -9,7 +9,3 @@ trait Endpoint extends Actor with ErrorMapping {
 
   def healthCheck(name:String, hc:()=>Boolean):Unit = HealthChecks.register(name, hc)
 }
-
-case class Host(host:String, port:Int) {
-  override def toString: String = s"${host}:${port}"
-}
