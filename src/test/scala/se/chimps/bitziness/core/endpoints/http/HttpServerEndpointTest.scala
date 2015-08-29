@@ -8,7 +8,7 @@ import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import org.scalatest.{fixture, FunSuite}
-import se.chimps.bitziness.core.endpoints.http.client.RequestFactory
+import se.chimps.bitziness.core.endpoints.http.client.RequestBuilders
 import se.chimps.bitziness.core.endpoints.http.server.unrouting._
 
 import scala.collection.parallel.immutable
@@ -19,9 +19,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 /**
  *
  */
-class HttpServerEndpointTest extends FunSuite with Unrouting with RequestFactory {
+class HttpServerEndpointTest extends FunSuite with Unrouting with RequestBuilders {
 
-  implicit val materializer = ActorMaterializer()(ActorSystem())
+  implicit val materializer = ActorMaterializer()(ActorSystem("akka-http-server"))
 
   registerController(new MyController)
 
@@ -39,7 +39,7 @@ class HttpServerEndpointTest extends FunSuite with Unrouting with RequestFactory
   }
 
   def expectResponse(status:Int, body:Seq[String], headers:Seq[HttpHeader] = Seq())(futureResponse:Future[HttpResponse]): Unit = {
-    val response = Await.result[HttpResponse](futureResponse, Duration(1L, TimeUnit.SECONDS))
+    val response = Await.result[HttpResponse](futureResponse, Duration(3L, TimeUnit.SECONDS))
 
     assert(response.status.intValue() == status, s"Status code was not $status, but ${response.status.intValue()}.")
     headers.foreach(h => {
@@ -54,7 +54,7 @@ class HttpServerEndpointTest extends FunSuite with Unrouting with RequestFactory
         val unchunking = d.dataBytes.map(_.utf8String).runForeach{ bit =>
           seq :+= bit
         }
-        Await.ready(unchunking, Duration(1L, TimeUnit.SECONDS))
+        Await.ready(unchunking, Duration(3L, TimeUnit.SECONDS))
         seq
       }
       case _ => Seq()

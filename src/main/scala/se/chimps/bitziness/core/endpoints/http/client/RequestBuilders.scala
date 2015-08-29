@@ -7,7 +7,7 @@ import akka.http.scaladsl.model._
 /**
  *
  */
-trait RequestFactory {
+trait RequestBuilders {
 
   // TODO add methods for all http verbs
 
