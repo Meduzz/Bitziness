@@ -17,8 +17,9 @@ trait Controller {
   def post(path:String, action:Action, paramex:Map[String, String] = Map()) = addAction("POST", path, action, paramex)
   def put(path:String, action:Action, paramex:Map[String, String] = Map()) = addAction("PUT", path, action, paramex)
   def delete(path:String, action:Action, paramex:Map[String, String] = Map()) = addAction("DELETE", path, action, paramex)
+  def option(path:String, action:Action, paramex:Map[String, String] = Map()) = addAction("OPTION", path, action, paramex)
 
-  private def addAction(method:String, path:String, action:Action, paramex:Map[String, String]) = {
+  protected def addAction(method:String, path:String, action:Action, paramex:Map[String, String]) = {
     val findPathParamsRegex = ":([a-zA-Z0-9]+)".r
     val pathParamsRegex = "(:[a-zA-Z0-9]+)".r
     val pathNames = findPathParamsRegex.findAllIn(path).map(m => m.substring(1)).toList

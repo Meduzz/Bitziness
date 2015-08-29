@@ -23,8 +23,8 @@ trait Engine {
     // TODO drain entities and what not...
 
     response.recover {
-      case _:NotFoundException => HttpResponse(status = StatusCodes.NotFound)
-      case _ => HttpResponse(status = StatusCodes.InternalServerError)
+      case _:NotFoundException => HttpResponse(StatusCodes.NotFound)
+      case _ => HttpResponse(StatusCodes.InternalServerError)
     }
   }
 

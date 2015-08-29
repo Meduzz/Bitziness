@@ -17,6 +17,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
  *
  */
 // TODO these asX methods will prolly fail on a second request.
+// TODO move durations to implicits.
+// TODO add a asEntityStream with fold instead of foreach.
 trait SugarCoating {
   def raw:HttpRequest
   def params:Map[String, String]
@@ -72,7 +74,7 @@ trait SugarCoating {
   }
 
   def hasEntity:Boolean = !raw.entity.isKnownEmpty()
-  def isChunked:Boolean = hasEntity && raw.entity.isChunked()
+  def isChunked:Boolean = raw.entity.isChunked()
 }
 
 trait Decoder[T] {

@@ -1,0 +1,36 @@
+package se.chimps.bitziness.core.endpoints.http.server.unrouting
+
+import akka.http.scaladsl.model._
+import se.chimps.bitziness.core.generic.View
+
+/**
+ *
+ */
+trait ResponseBuilders {
+
+  def Ok():HttpResponse = HttpResponse(StatusCodes.OK)
+  def Created():HttpResponse = HttpResponse(StatusCodes.Created)
+  def NotFound():HttpResponse = HttpResponse(StatusCodes.NotFound)
+  def Error():HttpResponse = HttpResponse(StatusCodes.InternalServerError)
+  def TODO():HttpResponse = HttpResponse(StatusCodes.NotImplemented)
+  def Forbidden():HttpResponse = HttpResponse(StatusCodes.Forbidden)
+
+}
+
+private class ViewExplicitImplicit(response:HttpResponse) {
+
+  def withView(view:View):HttpResponse = {
+    val contentType = MediaType.parse(view.contentType) match {
+      case Left(errors) => {
+        None
+      }
+      case Right(mediaType) => Some(mediaType.toContentType)
+    }
+
+    if (contentType.isEmpty) {
+      response.withEntity(HttpEntity(view.render()))
+    } else {
+      response.withEntity(contentType.get, view.render())
+    }
+  }
+}

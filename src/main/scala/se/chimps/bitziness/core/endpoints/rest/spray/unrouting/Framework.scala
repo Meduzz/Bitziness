@@ -29,9 +29,4 @@ object Framework {
       case _ => Some(new String(data, "utf-8"))
     }
   }
-
-  trait View {
-    def render():Array[Byte]
-    def contentType:String
-  }
 }
