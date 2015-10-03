@@ -11,6 +11,7 @@ import se.chimps.bitziness.core.endpoints.io.Common.ConnectionBase
 
 abstract class ServerIOEndpoint(val service:ActorRef) extends Endpoint with ActorLogging {
 
+  implicit val system = context.system
   var connectionHandlers:Map[ActorRef, ActorRef] = Map()
 
   override def supervisorStrategy: SupervisorStrategy = SupervisorStrategy.stoppingStrategy

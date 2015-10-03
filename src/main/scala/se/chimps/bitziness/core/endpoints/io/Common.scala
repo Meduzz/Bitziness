@@ -5,6 +5,7 @@ import akka.io.Tcp._
 import akka.util.ByteString
 
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object Common {
 
@@ -17,7 +18,7 @@ object Common {
     def onClose():Unit
     def onCommandFailed(cmd:CommandFailed):Unit
     def errorMapping:PartialFunction[Throwable, Either[ByteString, Unit]] = {
-      case e:_ => Left(ByteString.fromString(e.getMessage))
+      case e:Throwable => Left(ByteString.fromString(e.getMessage))
     }
     def write(data:ByteString):Unit = {
       connection ! Write(data, Ack)
@@ -33,7 +34,7 @@ object Common {
         onData(d.data)
           .recover(errorMapping)
           .foreach {
-            case Left(bs) => connection ! Write(bs, Ack)
+            case Left(bs) => write(bs)
             case Right(u) => u
           }
       }

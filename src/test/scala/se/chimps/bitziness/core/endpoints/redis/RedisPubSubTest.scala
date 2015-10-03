@@ -10,7 +10,7 @@ import redis.api.pubsub.{PMessage, Message}
  * Test the redis pubsub system.
  */
 class RedisPubSubTest extends FunSuite with TestKitBase with BeforeAndAfterAll {
-  implicit lazy val system: ActorSystem = ActorSystem()
+  implicit lazy val system: ActorSystem = ActorSystem("RedisPubSub")
 
   val probe = TestProbe()
   val endpoint = system.actorOf(Props(classOf[MyService], probe.ref))
