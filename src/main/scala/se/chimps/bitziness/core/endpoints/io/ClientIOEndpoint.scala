@@ -11,7 +11,7 @@ import se.chimps.bitziness.core.endpoints.io.Common.ConnectionBase
 
 abstract class ClientIOEndpoint(val service:ActorRef) extends Endpoint {
   implicit val system = context.system
-  
+
   override def receive: Receive = {
     case c:ConnectCommand => {
       IO(Tcp) ! Connect(c.remote, c.local, c.settings)
@@ -26,6 +26,7 @@ abstract class ClientIOEndpoint(val service:ActorRef) extends Endpoint {
 
 import scala.collection.immutable.Traversable
 case class ConnectCommand(remote:InetSocketAddress, local:Option[InetSocketAddress] = None, settings:Traversable[SocketOption] = Nil)
+case class DisconnectCommand()
 
 trait ClientIOConnection extends ConnectionBase {
   override def receive: Receive = connectionHandler orElse otherConnectionLogic

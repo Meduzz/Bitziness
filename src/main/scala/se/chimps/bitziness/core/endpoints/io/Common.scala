@@ -39,6 +39,7 @@ object Common {
           }
       }
       case cmd:CommandFailed => onCommandFailed(cmd)
+      case DisconnectCommand => connection ! Close
     }
 
     def otherConnectionLogic:Receive

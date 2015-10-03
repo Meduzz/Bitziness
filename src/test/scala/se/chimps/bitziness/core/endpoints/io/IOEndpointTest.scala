@@ -18,7 +18,7 @@ class IOEndpointTest extends FunSuite with TestKitBase with ByteStringUtil with 
 
   test("server connection does what it's told") {
     val probe = TestProbe()
-    val con = system.actorOf(Props(classOf[ServerConnection], probe.ref))
+    val con = system.actorOf(Props(classOf[MyServerConnection], probe.ref))
 
     con ! Send("test")
     val write = probe.expectMsgClass(classOf[Write])
@@ -31,7 +31,7 @@ class IOEndpointTest extends FunSuite with TestKitBase with ByteStringUtil with 
 
   test("client connection does what it's told") {
     val probe = TestProbe()
-    val con = system.actorOf(Props(classOf[ClientConnection], probe.ref))
+    val con = system.actorOf(Props(classOf[MyClientConnection], probe.ref))
 
     con ! Send("test")
     val write = probe.expectMsgClass(classOf[Write])
@@ -88,7 +88,7 @@ class IOEndpointTest extends FunSuite with TestKitBase with ByteStringUtil with 
 
 case class Send(text:String)
 
-class ServerConnection(val connection:ActorRef) extends ServerIOConnection with Logic {
+class MyServerConnection(val connection:ActorRef) extends ServerIOConnection with Logic {
 
   override def onCommandFailed(cmd:CommandFailed): Unit = {
     println("A command failed.")
@@ -103,7 +103,7 @@ class ServerConnection(val connection:ActorRef) extends ServerIOConnection with 
   }
 }
 
-class ClientConnection(val connection:ActorRef) extends ClientIOConnection with Logic {
+class MyClientConnection(val connection:ActorRef) extends ClientIOConnection with Logic {
   override def onClose(): Unit = context stop self
 
   override def onCommandFailed(cmd: CommandFailed): Unit = {
@@ -157,7 +157,7 @@ trait ByteStringUtil {
 
 class MyServerEndpoint(override val service:ActorRef) extends ServerIOEndpoint(service) {
   override def onConnection(remote: InetSocketAddress, connection: ActorRef): Option[ActorRef] = {
-    Some(context.system.actorOf(Props(classOf[ServerConnection], connection)))
+    Some(context.system.actorOf(Props(classOf[MyServerConnection], connection)))
   }
 
   override def onCommandFailed(cmd: CommandFailed): Unit = {
@@ -167,7 +167,7 @@ class MyServerEndpoint(override val service:ActorRef) extends ServerIOEndpoint(s
 
 class MyClientEndpoint(override val service:ActorRef) extends ClientIOEndpoint(service) {
   override def onConnection(connection: ActorRef): ActorRef = {
-    val created = context.system.actorOf(Props(classOf[ClientConnection], connection))
+    val created = context.system.actorOf(Props(classOf[MyClientConnection], connection))
     service ! created
     created
   }
