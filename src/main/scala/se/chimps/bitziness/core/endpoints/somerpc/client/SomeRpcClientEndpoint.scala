@@ -5,12 +5,14 @@ import java.nio.ByteOrder
 import java.util.UUID
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
-import akka.io.Tcp.Received
+import akka.io.Tcp.{Register, Connected, Received}
 import akka.util.{ByteIterator, ByteString}
 import se.chimps.bitziness.core.Endpoint
-import se.chimps.bitziness.core.endpoints.somerpc.common.Model.Transmit
-import se.chimps.bitziness.core.endpoints.somerpc.common.{BinaryExtension, Extension, Type}
+import se.chimps.bitziness.core.endpoints.somerpc.common.Extensions._
+import se.chimps.bitziness.core.endpoints.somerpc.common.Model.{Connection, Event, Handle, Transmit}
+import se.chimps.bitziness.core.endpoints.somerpc.common._
 
+import scala.concurrent.Promise
 import scala.util.hashing.MurmurHash3
 
 /**
@@ -25,37 +27,86 @@ trait SomeRpcClientEndpoint extends Endpoint {
 
 }
 
-class SomeRpcDataClientActor(settings:SomeRpcClientSettings) extends Actor {
+private class SomeRpcDataClientActor(settings:SomeRpcClientSettings) extends Actor {
   implicit val byteOrder = ByteOrder.nativeOrder()
 
+  var promisses:Map[UUID, Promise[Seq[Array[Byte]]]] = Map()
+
   override def receive: Receive = {
-    // TODO replace uuid with promise, create a promise-store and, create a new uuid with every request.
-    case Transmit(method, uuid, data) => {
+    case Transmit(method, promise, data) => {
+      val uuid = store(promise)
       val pf = buildBinaryExecute // we're calling this once, since it could be expensive.
       val bin = data.map(pf(_))
       val bs = write(method, uuid, bin)
       // TODO send data.
     }
     case Received(data) => {
+      val connection = new Connection(sender())
       read(data) match {
         case Seq(method:Int, flags:Int) => {
-          // connection setup.
+          if (method == Methods.CONNECT) {
+            // connection setup.
+          } else {
+            // start screaming!
+          }
         }
         case Seq(method:Int, uuid:UUID, data:Seq[Array[Byte]]) => {
           // normal data.
+          if (method == Methods.REPLY) {
+            load(uuid).foreach(_.success(data))
+          } else {
+            settings.pf(Handle(method, uuid, data, connection))
+          }
         }
       }
     }
+    case Connected(remote, local) => {
+      sender() ! Register(self)
+    }
   }
 
-  def getBinaryExtentions():Seq[BinaryExtension] = {
+  def store(promise:Promise[Seq[Array[Byte]]]):UUID = {
+    val uuid = UUID.randomUUID()
+    promisses = promisses ++ Map(uuid -> promise)
+    uuid
+  }
+  
+  def load(uuid: UUID):Option[Promise[Seq[Array[Byte]]]] = {
+    promisses.get(uuid)
+  }
+
+  def decoders():Seq[Decoder] = {
     settings.extensions
-      .filter(_.t.equals(Type.BINARY))
-      .map(_.asInstanceOf[BinaryExtension])
+      .filter(_.extensionType.equals(Type.DECODER))
+      .map(_.asInstanceOf[Decoder])
+  }
+
+  def decoder:PartialFunction[Any, Array[Byte]]= {
+    decoders()
+      .headOption
+      .map(_.execute).getOrElse(new JavaDecoder().execute)
+  }
+
+  def encoders():Seq[Encoder] = {
+    settings.extensions
+      .filter(_.extensionType.equals(Type.ENCODER))
+      .map(_.asInstanceOf[Encoder])
+  }
+
+  def encoder:PartialFunction[Array[Byte], Any] = {
+    encoders()
+      .headOption
+      .map(_.execute).getOrElse(new JavaEncoder().execute)
+  }
+
+  def binaryCodecs():Seq[Binary] = {
+    settings.extensions
+      .filter(_.extensionType.equals(Type.BINARY))
+      .map(_.asInstanceOf[Binary])
   }
 
   def buildBinaryExecute:PartialFunction[Array[Byte], Array[Byte]] = {
-    val binary = getBinaryExtentions()
+    val binary = binaryCodecs()
     binary.tail.foldLeft(binary.head.execute)((in, out) => in.andThen(out.execute))
   }
 
@@ -114,14 +165,14 @@ class SomeRpcDataClientActor(settings:SomeRpcClientSettings) extends Actor {
   }
 }
 
-trait ClientBuilder {
+sealed trait ClientBuilder {
   def connect(address:InetSocketAddress):ClientBuilder
   def registerExtension(extension:Extension):ClientBuilder
   def registerExtensions(extensions:Seq[Extension]):ClientBuilder
-  def build()(implicit system:ActorSystem):ActorRef
+  def build(pf:PartialFunction[Event, Unit])(implicit system:ActorSystem):ActorRef
 }
 
-case class SomeRpcClientSettings(address: InetSocketAddress, extensions:Seq[Extension])
+case class SomeRpcClientSettings(address: InetSocketAddress, extensions:Seq[Extension], pf:PartialFunction[Event, Unit])
 
 private case class ClientBuilderImpl(address: InetSocketAddress, extensions:Seq[Extension]) extends ClientBuilder {
   override def connect(address: InetSocketAddress): ClientBuilder = {
@@ -136,7 +187,11 @@ private case class ClientBuilderImpl(address: InetSocketAddress, extensions:Seq[
     copy(extensions = this.extensions ++ extensions)
   }
 
-  override def build()(implicit system:ActorSystem):ActorRef = {
-    system.actorOf(Props(classOf[SomeRpcDataClientActor], SomeRpcClientSettings(this.address, this.extensions)))
+  override def build(pf:PartialFunction[Event, Unit])(implicit system:ActorSystem):ActorRef = {
+    system.actorOf(Props(classOf[SomeRpcDataClientActor], SomeRpcClientSettings(this.address, this.extensions, pf.orElse(fallback))))
+  }
+
+  private def fallback:PartialFunction[Event, Unit] = {
+    case e:Event => _
   }
 }
