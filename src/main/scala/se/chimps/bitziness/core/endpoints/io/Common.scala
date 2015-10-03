@@ -13,11 +13,11 @@ object Common {
   trait ConnectionBase extends Actor {
     def connection:ActorRef
 
-    def onData(data:ByteString):Future[ByteString]
+    def onData(data:ByteString):Future[Either[ByteString, Unit]]
     def onClose():Unit
     def onCommandFailed(cmd:CommandFailed):Unit
-    def errorMapping:PartialFunction[Throwable, ByteString] = {
-      case e:_ => ByteString.fromString(e.getMessage)
+    def errorMapping:PartialFunction[Throwable, Either[ByteString, Unit]] = {
+      case e:_ => Left(ByteString.fromString(e.getMessage))
     }
     def write(data:ByteString):Unit = {
       connection ! Write(data, Ack)
@@ -27,12 +27,15 @@ object Common {
     }
 
     def connectionHandler:Receive = {
-      case Closed => onClose()
-      case PeerClosed => onClose()
+      case c:ConnectionClosed => onClose()
+      case Aborted => onClose()
       case d:Received => {
         onData(d.data)
           .recover(errorMapping)
-          .foreach(bs => connection ! Write(bs, Ack))
+          .foreach {
+            case Left(bs) => connection ! Write(bs, Ack)
+            case Right(u) => u
+          }
       }
       case cmd:CommandFailed => onCommandFailed(cmd)
     }

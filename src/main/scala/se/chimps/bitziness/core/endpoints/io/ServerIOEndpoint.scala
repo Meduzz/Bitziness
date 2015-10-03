@@ -31,6 +31,7 @@ abstract class ServerIOEndpoint(val service:ActorRef) extends Endpoint with Acto
       }
     }
     case cmd:CommandFailed => onCommandFailed(cmd)
+    case CloseAllCommand => connectionHandlers.keys.foreach(_ ! ConfirmedClose)
   }
 
   def onConnection(remote:InetSocketAddress, connection:ActorRef):Option[ActorRef]
