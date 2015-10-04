@@ -7,8 +7,7 @@ import akka.actor.Actor
 import akka.event.Logging
 import akka.io.IO
 import akka.io.Tcp.{Bind, Bound, CommandFailed, Connected}
-import se.chimps.bitziness.core.Host
-import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Engine
+import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.{Host, Engine}
 
 /**
  * The handler that the web-server sees.

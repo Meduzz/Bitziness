@@ -11,7 +11,7 @@ import spray.http._
 import scala.concurrent.Future
 
 class ControllerTest extends FunSuite with TestKitBase with ControllerTesting {
-  implicit lazy val system = ActorSystem()
+  implicit lazy val system = ActorSystem("RestController")
 
   lazy val log = Logging(system, getClass.getName)
 
