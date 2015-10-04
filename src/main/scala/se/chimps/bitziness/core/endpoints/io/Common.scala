@@ -4,9 +4,6 @@ import akka.actor.{Actor, ActorRef}
 import akka.io.Tcp._
 import akka.util.ByteString
 
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
-
 object Common {
 
   private[io] case object Ack extends Event
@@ -14,7 +11,7 @@ object Common {
   trait ConnectionBase extends Actor {
     def connection:ActorRef
 
-    def onData(data:ByteString):Future[Either[ByteString, Unit]]
+    def onData(data:ByteString):Unit
     def onClose():Unit
     def onCommandFailed(cmd:CommandFailed):Unit
     def errorMapping:PartialFunction[Throwable, Either[ByteString, Unit]] = {
@@ -32,11 +29,6 @@ object Common {
       case Aborted => onClose()
       case d:Received => {
         onData(d.data)
-          .recover(errorMapping)
-          .foreach {
-            case Left(bs) => write(bs)
-            case Right(u) => u
-          }
       }
       case cmd:CommandFailed => onCommandFailed(cmd)
       case DisconnectCommand => connection ! Close

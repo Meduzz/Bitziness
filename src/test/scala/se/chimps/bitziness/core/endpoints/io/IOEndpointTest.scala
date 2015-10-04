@@ -10,9 +10,6 @@ import akka.util.ByteString
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import se.chimps.bitziness.core.endpoints.io.Common.ConnectionBase
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-
 class IOEndpointTest extends FunSuite with TestKitBase with ByteStringUtil with BeforeAndAfterAll {
   lazy implicit val system = ActorSystem("IoEndpoint")
 
@@ -118,7 +115,7 @@ class MyClientConnection(val connection:ActorRef) extends ClientIOConnection wit
 }
 
 trait Logic extends ByteStringUtil { self:ConnectionBase =>
-  override def onData(data: ByteString): Future[Either[ByteString, Unit]] = {
+  override def onData(data: ByteString):Unit = {
     implicit val byteOrder = ByteOrder.nativeOrder()
     val it = data.iterator
 
@@ -126,9 +123,9 @@ trait Logic extends ByteStringUtil { self:ConnectionBase =>
     val rest = it.toByteString
 
     if (m == 0) {
-      Future(Right(Unit))
+      Unit
     } else {
-      Future(Left(doReply(rest)))
+      write(doReply(rest))
     }
   }
 }
