@@ -3,14 +3,11 @@ package se.chimps.bitziness.core.endpoints.io
 import java.net.InetSocketAddress
 import java.nio.ByteOrder
 
-import akka.actor.{Props, ActorRef, ActorSystem}
+import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.io.Tcp.CommandFailed
-import akka.testkit.{TestProbe, TestKitBase}
+import akka.testkit.{TestKitBase, TestProbe}
 import akka.util.ByteString
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
-
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
 
 class LessSandboxyIOTest extends FunSuite with TestKitBase with BeforeAndAfterAll {
   lazy implicit val system = ActorSystem("IoTest")
@@ -60,7 +57,7 @@ class Server(override val service:ActorRef) extends ServerIOEndpoint(service) {
 class ServerConnection(override val connection:ActorRef, val service:ActorRef) extends ServerIOConnection {
   implicit val byteOrder = ByteOrder.nativeOrder()
 
-  override def onData(data: ByteString): Future[Either[ByteString, Unit]] = {
+  override def onData(data: ByteString):Unit = {
     val it = data.iterator
 
     val method = it.getInt
@@ -72,10 +69,10 @@ class ServerConnection(override val connection:ActorRef, val service:ActorRef) e
       b.putInt(0)
       b.append(rest)
 
-      Future(Left(b.result()))
+      write(b.result())
     } else {
       service ! rest.utf8String
-      Future(Right(Unit))
+      Unit
     }
   }
 
@@ -111,7 +108,7 @@ class Client(override val service:ActorRef) extends ClientIOEndpoint(service) {
 class ClientConnection(val connection:ActorRef, val service:ActorRef) extends ClientIOConnection {
   implicit val byteOrder = ByteOrder.nativeOrder()
 
-  override def onData(data: ByteString): Future[Either[ByteString, Unit]] = {
+  override def onData(data: ByteString):Unit = {
     val it = data.iterator
 
     val method = it.getInt
@@ -123,10 +120,10 @@ class ClientConnection(val connection:ActorRef, val service:ActorRef) extends Cl
       b.putInt(0)
       b.append(rest)
 
-      Future(Left(b.result()))
+      write(b.result())
     } else {
       service ! rest.utf8String
-      Future(Right(Unit))
+      Unit
     }
   }
 
