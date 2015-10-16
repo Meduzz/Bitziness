@@ -31,7 +31,10 @@ object Common {
         onData(d.data)
       }
       case cmd:CommandFailed => onCommandFailed(cmd)
-      case DisconnectCommand => connection ! Close
+      case d:DisconnectCommand => {
+        connection ! Close
+        onClose()
+      }
     }
 
     def otherConnectionLogic:Receive

@@ -66,7 +66,7 @@ trait ControllerTesting extends Engine {
 //            println(chunk.data.asString(HttpCharsets.`UTF-8`))
             // TODO there can be out of order delivery here...
             assert(!chunk.data.isEmpty, "MessageChunk had no body!")
-            assert(chunk.data.asString(HttpCharsets.`UTF-8`).equals(b), s"Chunk was not $b, but ${chunk.data.asString(HttpCharsets.`UTF-8`)}.")
+            assert(parts.contains(chunk.data.asString(HttpCharsets.`UTF-8`)), s"Chunk ${chunk.data.asString(HttpCharsets.`UTF-8`)} was not part of, ${parts}.")
           }
           case end: ChunkedMessageEnd => {
           }
