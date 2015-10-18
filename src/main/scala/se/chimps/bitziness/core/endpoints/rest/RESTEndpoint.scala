@@ -15,6 +15,7 @@ import scala.util.{Try, Success, Failure}
 /**
  * Main trait for RESTful endpoints.
  */
+@deprecated
 trait RESTEndpoint extends Endpoint with ReceiveChain {
   import scala.concurrent.ExecutionContext.Implicits.global
 
