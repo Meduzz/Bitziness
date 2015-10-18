@@ -1,0 +1,13 @@
+!!! 5
+html
+  head
+    title Some posting
+  body
+    h1 Post data.
+    form(method="post")
+      input(type="text", name="key", placeholder="Hello")
+      input(type="text", name="value", placeholder="world!")
+      input(type="submit", value="Save")
+
+    if resp
+      h1= resp

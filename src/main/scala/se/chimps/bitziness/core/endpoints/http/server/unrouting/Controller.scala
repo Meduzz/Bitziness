@@ -25,7 +25,7 @@ trait Controller {
     val pathNames = findPathParamsRegex.findAllIn(path).map(m => m.substring(1)).toList
     val pathRegex = pathNames.foldLeft(path)((url, name) => s"(:$name)".r.replaceAllIn(url, paramex.getOrElse(name, "([a-zA-Z0-9]+)"))).r
 
-    definitions :+= ActionDefinition(method, pathRegex, action, pathNames)
+    definitions = definitions ++ List(ActionDefinition(method, pathRegex, action, pathNames))
   }
 }
 

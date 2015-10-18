@@ -3,19 +3,19 @@ package example
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorRef
-import akka.event.Logging
+import akka.http.javadsl.model.headers.SetCookie
+import akka.http.scaladsl.Http.ServerBinding
+import akka.http.scaladsl.model.DateTime
+import akka.http.scaladsl.model.headers.{HttpCookie, Cookie}
+import akka.stream.ActorMaterializer
 import akka.util.Timeout
-import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Action
-import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.Controller
-import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.Responses.Ok
+import se.chimps.bitziness.core.endpoints.http.server.unrouting.{ResponseBuilders, Action, Controller, Unrouting}
+import se.chimps.bitziness.core.endpoints.http.{HttpServerBuilder, HttpServerEndpoint}
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.view.{Jade4j, Scalate}
-import se.chimps.bitziness.core.endpoints.rest.{EndpointDefinition, RestEndpointBuilder, RESTEndpoint}
-import se.chimps.bitziness.core.generic.LocalSession.LocalSessionFactory
-import se.chimps.bitziness.core.generic.{SessionFactory, SessionSupport}
-import se.chimps.bitziness.core.generic.Waitable._
 import se.chimps.bitziness.core.Service
 import akka.pattern._
 import scala.concurrent.ExecutionContext.global
+import scala.concurrent.Future
 
 class PingService extends Service {
   override def handle:Receive = {
@@ -28,62 +28,68 @@ class PingService extends Service {
   }
 }
 
-class PingEndpoint(val service:ActorRef) extends RESTEndpoint {
+class PingEndpoint(val service:ActorRef) extends HttpServerEndpoint with Unrouting {
   implicit val executor = global
-  val log = Logging(context.system, getClass.getName)
+  implicit val materializer = ActorMaterializer()(context)
 
-  override def configureRestEndpoint(builder:RestEndpointBuilder):EndpointDefinition = {
+  override val host = "localhost"
+  override val port = 9000
+
+  override def createServer(builder:HttpServerBuilder):Future[ServerBinding] = {
     healthCheck("PingEndpoint", () => 1==1)
 
-    val controller = new PingController(self)
-    builder.mountController("", controller)
+//    builder.bind("localhost", 9000)
+    builder.registerController(new PingController(self))
     builder.build()
   }
 
-  override def rest:Receive = {
+  override def receive:Receive = {
     case s:String =>
       implicit val timeout = Timeout(3l, TimeUnit.SECONDS)
       val sender:ActorRef = context.sender()
       log.info("Pinging service")
-      val pong = (service ? s.toUpperCase).get[String].toLowerCase
-      sender ! pong
+      val pong = (service ? s.toUpperCase).mapTo[String].map(_.toLowerCase).pipeTo(sender)
   }
 }
 
-class PingController(val endpoint:ActorRef) extends Controller with SessionSupport {
+class PingController(val endpoint:ActorRef) extends Controller with ResponseBuilders {
   implicit val executor = global
+  implicit val timeout = Timeout(3l, TimeUnit.SECONDS)
 
-  override implicit val sessionFactory: SessionFactory = LocalSessionFactory
+  get("/", Action.sync { req =>
+    Ok().withView(Scalate("/templates/hello.jade", Map("title"->"Hello world!")))
+  })
+  get("/ping", Action { req =>
+    val pong = (endpoint ? "ping").mapTo[String]
+    pong.map(resp => Ok().withView(Scalate("/templates/ping.jade", Map("pong" -> resp))))
+  })
+  get("/hello/:world", Action.sync { req =>
+    Ok().withView(Jade4j.classpath("templates/world.jade", Map("world" -> req.params.getOrElse("world", "failed"))))
+  })
+  get("/cookie", Action.sync { req =>
+    val Seq(key, value, view, delete) = req.param("key", "value", "view", "delete")
+    val cookie = req.cookie(view.getOrElse(""))
 
-  override def apply(service:ActorRef):Unit = {
-    get("/", Action { req =>
-      Ok().sendView(Scalate("/templates/hello.jade", Map("title"->"Hello world!"))).build()
-    })
-    get("/ping", Action { req =>
-      implicit val timeout = Timeout(3l, TimeUnit.SECONDS)
-      val pong = (service ? "ping").get[String]
-      Ok().sendView(Scalate("/templates/ping.jade", Map("pong" -> pong))).build()
-    })
-    get("/hello/:world", Action { req =>
-      Ok().sendView(Jade4j.classpath("templates/world.jade", Map("world" -> req.params("world").getOrElse("failed")))).build()
-    })
-    get("/cookie", Action { req =>
-      val Seq(key, value, view, delete) = req.params("key", "value", "view", "delete")
-      val cookie = req.cookie(view.getOrElse(""))
+    var resp = Ok().withView(Scalate("/templates/cookie.jade", Map("cookie" -> cookie.getOrElse(""), "key" -> view.getOrElse(""), "title" -> "Cookies")))
 
-      var resp = Ok().sendView(Scalate("/templates/cookie.jade", Map("cookie" -> cookie.getOrElse(""), "key" -> view.getOrElse(""), "title" -> "Cookies")))
+    if (key.isDefined && value.isDefined) {
+      resp = resp.withHeaders(SetCookie.create(HttpCookie(key.get, value.get)))
+    }
 
-      if (key.isDefined && value.isDefined) {
-        resp.cookie(key.get, value.get)
-      }
+    if (delete.isDefined) {
+      resp = resp.withHeaders(SetCookie.create(HttpCookie(delete.get, "", Some(DateTime(1234L)))))
+    }
 
-      if (delete.isDefined) {
-        resp.cookie(key = delete.get, value = "", expire = Some(1234L))
-      }
-
-      resp.build()
-    })
-  }
+    resp
+  })
+  get("/form", Action.sync { req =>
+    Ok().withView(Jade4j.classpath("templates/form.jade", Map()))
+  })
+  post("/form", Action { req =>
+    req.asFormData().map {map =>
+      Ok().withView(Jade4j.classpath("templates/form.jade", Map("resp" -> s"${map("key")} ${map("value")}")))
+    }
+  })
 
   implicit def str2bytes(data:String):Array[Byte] = {
     data.getBytes("utf-8")

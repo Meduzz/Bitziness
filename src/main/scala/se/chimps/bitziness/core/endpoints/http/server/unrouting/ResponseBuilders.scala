@@ -15,9 +15,10 @@ trait ResponseBuilders {
   def TODO():HttpResponse = HttpResponse(StatusCodes.NotImplemented)
   def Forbidden():HttpResponse = HttpResponse(StatusCodes.Forbidden)
 
+  implicit def viewImplicit(response:HttpResponse):ViewExplicitImplicit = new ViewExplicitImplicit(response)
 }
 
-private class ViewExplicitImplicit(response:HttpResponse) {
+class ViewExplicitImplicit(response:HttpResponse) {
 
   def withView(view:View):HttpResponse = {
     val contentType = MediaType.parse(view.contentType) match {

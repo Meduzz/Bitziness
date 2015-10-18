@@ -25,7 +25,7 @@ trait SugarCoating {
   implicit def materializer:Materializer
 
   def param(name:String):Option[String] = params.get(name)
-  def param(names:String*):Seq[String] = names.map(k => params(k)).seq
+  def param(names:String*):Seq[Option[String]] = names.map(k => params.get(k)).seq
 
   def cookie(name:String):Option[String] = raw.cookies.find(c => c.name.equals(name)).map(c => c.value)
 

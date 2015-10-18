@@ -21,10 +21,15 @@ trait Engine {
     } yield actionResp
 
     // TODO drain entities and what not...
+    // TODO setting for printing stacktraces
+    // TODO setting for request logging.
 
     response.recover {
-      case _:NotFoundException => HttpResponse(StatusCodes.NotFound)
-      case _ => HttpResponse(StatusCodes.InternalServerError)
+      case _:NotFoundException => HttpResponse(404, entity = "Not found")
+      case e:Throwable => {
+        e.printStackTrace()
+        HttpResponse(500, entity = "Internal server error")
+      }
     }
   }
 
@@ -41,14 +46,14 @@ trait Engine {
 
   private def executeAction(url:String, request:HttpRequest, action:ActionDefinition)(implicit materializer: Materializer):Future[HttpResponse] = {
     val matcher = action.pathRegex.pattern.matcher(url)
-    implicit val pathParams:Map[String, String] = if (matcher.matches()) {
+    val pathParams:Map[String, String] = if (matcher.matches()) {
       val groups = (0 to matcher.groupCount()).map(b => matcher.group(b))
       action.paramNames.zip(groups.tail).toMap[String, String]
     } else {
       Map()
     }
 
-    action.action(UnroutingRequest(request, pathParams, materializer))
+    action.action(UnroutingRequest(request, request.uri.query.toMap ++ pathParams, materializer))
   }
 
   private def method(request: HttpRequest):String = {
