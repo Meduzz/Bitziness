@@ -1,7 +1,7 @@
 package se.chimps.bitziness.core.endpoints.rest.spray.unrouting.view
 
 import org.fusesource.scalate._
-import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.View
+import se.chimps.bitziness.core.generic.View
 
 /**
  * A view built on the excellent Scalate framework.
@@ -25,4 +25,6 @@ class Scalate(val template:String, val model:Map[String, Any])(implicit val engi
   }
 
   override def contentType: String = "text/html"
+
+  override def charset:String = "utf-8"
 }

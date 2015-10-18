@@ -2,7 +2,7 @@ package se.chimps.bitziness.core.endpoints.rest.spray.unrouting
 
 import java.net.URLDecoder
 
-import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.View
+import se.chimps.bitziness.core.generic.View
 import spray.http.HttpHeaders.RawHeader
 import spray.http._
 

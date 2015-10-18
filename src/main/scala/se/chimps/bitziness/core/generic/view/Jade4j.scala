@@ -4,7 +4,7 @@ import java.io.Reader
 
 import de.neuland.jade4j.{JadeConfiguration, Jade4J}
 import de.neuland.jade4j.template._
-import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.View
+import se.chimps.bitziness.core.generic.View
 
 /**
  * I found this jade impl in java, that looks very promising!
@@ -54,4 +54,6 @@ class Jade4JImpl(template:JadeTemplate, model:Map[String, AnyRef], config:Option
   }
 
   override def contentType: String = "text/html"
+
+  override def charset:String = "utf-8"
 }
