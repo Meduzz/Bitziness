@@ -11,7 +11,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
  */
 trait Engine {
 
-  def actions:Map[String, List[ActionDefinition]]
+  private[unrouting] def actions:Map[String, List[ActionDefinition]]
 
   def handleRequest(request:HttpRequest)(implicit materializer: Materializer):Future[HttpResponse] = {
 

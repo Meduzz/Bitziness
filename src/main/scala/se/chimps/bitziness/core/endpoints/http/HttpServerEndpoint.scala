@@ -1,114 +1,73 @@
 package se.chimps.bitziness.core.endpoints.http
 
-import akka.actor.{ActorSystem, ActorLogging}
-import akka.event.LoggingAdapter
-import akka.http.ServerSettings.Timeouts
-import akka.http.ServerSettings
+import java.util.concurrent.TimeUnit
+
+import akka.actor._
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.Http.{IncomingConnection, ServerBinding}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
-import akka.io.Inet.SocketOption
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Sink, Source}
-import com.typesafe.config.Config
+import akka.stream.scaladsl.Sink
 import se.chimps.bitziness.core.Endpoint
+import se.chimps.bitziness.core.endpoints.http.server.unrouting.{Controller, Unrouting}
 
 import scala.concurrent.Future
-import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.duration.Duration
+import scala.concurrent.ExecutionContext._
 
 /**
  *
  */
-trait HttpServerEndpoint extends Endpoint with ActorLogging {
-  implicit val system = context.system
-  implicit val mat = ActorMaterializer()
+trait HttpServerEndpoint extends Endpoint {
+  implicit val executor = global
+  val server = createServer(new HttpServerBuilderImpl("localhost", 8080, classOf[Routed], context.system))
 
-  private [http] lazy val serverSource = Http().bind(host, port, log = log)
-  private [http] var server:Future[ServerBinding] = _
+  def createServer(builder:HttpServerBuilder):Future[ActorRef]
+
+  // TODO this does not really belong here, neither does the Routed as default above.
+  def registerController(controller:Controller):Unit = {
+    server.foreach(ref => ref ! controller)
+  }
+}
+
+abstract class AbstractHttpServerBinder(host:String, port:Int) extends Actor {
+  implicit val system = context.system
+  implicit val materializer = ActorMaterializer()
+
+  val serverSource = Http().bind(host, port)
+  def requestHandler:(HttpRequest) => Future[HttpResponse]
+}
+
+class Routed(val host:String, val port:Int) extends AbstractHttpServerBinder(host, port) with Unrouting with ActorLogging {
+  log.info(s"Http listening on $host:$port")
+
+  override def receive:Receive = {
+    case c:Controller => registerController(c)
+  }
 
   @throws[Exception](classOf[Exception])
   override def preStart():Unit = {
     super.preStart()
-    log.info(s"Akka http listening @ $host:$port.")
-    server = createServer(new HttpServerBuilderImpl(serverSource, settings = ServerSettings(context.system), handler = requestHandler, logger = log))
-  }
-
-  def createServer(builder:HttpServerBuilder):Future[ServerBinding]
-  def requestHandler:(HttpRequest) => Future[HttpResponse]
-
-  def host:String
-  def port:Int
-}
-
-trait HttpServerBuilder {
-//  def akkaParallelism(cores:Int):HttpServerBuilder
-//  def settings(fn:(ServerSettingsBuilder)=>ServerSettings):HttpServerBuilder
-//  def settingsFromConfig(config:Config):HttpServerBuilder
-  def build()(implicit system:ActorSystem, mat:ActorMaterializer):Future[ServerBinding]
-}
-
-trait ServerSettingsBuilder {
-  def backlog(number:Int):ServerSettingsBuilder
-  def maxConnections(number:Int):ServerSettingsBuilder
-  def verboseErrorMessages(torf:Boolean):ServerSettingsBuilder
-  def socketOption(option:SocketOption):ServerSettingsBuilder
-  def idleTimeout(timeout:FiniteDuration):ServerSettingsBuilder
-  def bindTimeout(timeout:FiniteDuration):ServerSettingsBuilder
-  def build():ServerSettings
-}
-
-private case class HttpServerBuilderImpl(source:Source[IncomingConnection, Future[ServerBinding]],
-                                         cores:Int = 4,
-                                         settings:ServerSettings,
-                                         handler:(HttpRequest)=>Future[HttpResponse],
-                                         logger:LoggingAdapter) extends HttpServerBuilder {
-
-//  override def settingsFromConfig(config:Config):HttpServerBuilder = copy(settings = ServerSettings.create(config))
-
-//  override def akkaParallelism(cores:Int):HttpServerBuilder = copy(cores = cores)
-
-/*
-  override def settings(fn:(ServerSettingsBuilder) => ServerSettings):HttpServerBuilder = {
-    copy(settings = fn(new ServerSettingsBuilderImpl(settings)))
-  }
-*/
-
-  override def build()(implicit system:ActorSystem, mat:ActorMaterializer):Future[ServerBinding] = {
-    source.to(Sink.foreach(conn => {
-      conn.handleWithAsyncHandler(handler)
+    serverSource.to(Sink.foreach(conn => {
+      conn.handleWithAsyncHandler(requestHandler)
     })).run()
   }
 }
 
-private case class ServerSettingsBuilderImpl(backlog:Int,
-                                             idleTimeout:Duration,
-                                             verboseErrors:Boolean,
-                                             bindTimeout:FiniteDuration,
-                                             socketOpts:Seq[SocketOption],
-                                             maxConnections:Int,
-                                             settings:ServerSettings) extends ServerSettingsBuilder {
+trait HttpServerBuilder {
+  def listen(host:String, port:Int):HttpServerBuilder
+  def binder(binder:Class[_<:AbstractHttpServerBinder]):HttpServerBuilder
+  def build():Future[ActorRef]
+}
 
-  def this(settings:ServerSettings) = {
-    this(settings.backlog,
-      settings.timeouts.idleTimeout.unary_-,
-      settings.verboseErrorMessages,
-      settings.timeouts.bindTimeout,
-      settings.socketOptions.toSeq,
-      settings.maxConnections,
-      settings)
+private case class HttpServerBuilderImpl(host:String, port:Int, binder:Class[_<:AbstractHttpServerBinder], system:ActorSystem) extends HttpServerBuilder {
+  import Implicits.global
+
+  override def listen(host:String, port:Int):HttpServerBuilder = copy(host, port)
+  override def binder(binder:Class[_<:AbstractHttpServerBinder]):HttpServerBuilder = copy(binder = binder)
+
+  override def build():Future[ActorRef] = {
+    system.actorSelection(s"/user/$host:$port").resolveOne(Duration(3, TimeUnit.SECONDS)).recover({
+      case e:Throwable => system.actorOf(Props(binder, host, port), s"$host:$port")
+    })
   }
-
-  override def backlog(number:Int):ServerSettingsBuilder = copy(backlog = number)
-
-  override def idleTimeout(timeout:FiniteDuration):ServerSettingsBuilder = copy(idleTimeout = timeout)
-
-  override def verboseErrorMessages(torf:Boolean):ServerSettingsBuilder = copy(verboseErrors = torf)
-
-  override def bindTimeout(timeout:FiniteDuration):ServerSettingsBuilder = copy(bindTimeout = timeout)
-
-  override def socketOption(option:SocketOption):ServerSettingsBuilder = copy(socketOpts = socketOpts ++ Seq(option))
-
-  override def maxConnections(number:Int):ServerSettingsBuilder = copy(maxConnections = number)
-
-  override def build():ServerSettings = settings.copy(maxConnections = maxConnections, backlog = backlog, verboseErrorMessages = verboseErrors, timeouts = Timeouts(idleTimeout,bindTimeout))
 }

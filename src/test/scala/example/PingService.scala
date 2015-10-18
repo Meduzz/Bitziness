@@ -2,7 +2,7 @@ package example
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.ActorRef
+import akka.actor.{ActorLogging, ActorRef}
 import akka.http.javadsl.model.headers.SetCookie
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.DateTime
@@ -28,19 +28,11 @@ class PingService extends Service {
   }
 }
 
-class PingEndpoint(val service:ActorRef) extends HttpServerEndpoint with Unrouting {
-  implicit val executor = global
-  implicit val materializer = ActorMaterializer()(context)
-
-  override val host = "localhost"
-  override val port = 9000
-
-  override def createServer(builder:HttpServerBuilder):Future[ServerBinding] = {
+class PingEndpoint(val service:ActorRef) extends HttpServerEndpoint with ActorLogging {
+  override def createServer(builder:HttpServerBuilder):Future[ActorRef] = {
     healthCheck("PingEndpoint", () => 1==1)
 
-//    builder.bind("localhost", 9000)
-    builder.registerController(new PingController(self))
-    builder.build()
+    builder.listen("localhost", 9000).build()
   }
 
   override def receive:Receive = {
@@ -49,6 +41,12 @@ class PingEndpoint(val service:ActorRef) extends HttpServerEndpoint with Unrouti
       val sender:ActorRef = context.sender()
       log.info("Pinging service")
       val pong = (service ? s.toUpperCase).mapTo[String].map(_.toLowerCase).pipeTo(sender)
+  }
+
+  @throws[Exception](classOf[Exception])
+  override def preStart():Unit = {
+    super.preStart()
+    registerController(new PingController(self))
   }
 }
 

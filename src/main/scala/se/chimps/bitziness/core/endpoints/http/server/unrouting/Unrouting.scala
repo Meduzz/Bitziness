@@ -15,14 +15,4 @@ trait Unrouting extends ActionRegistry with Engine {
   def requestHandler:(HttpRequest) => Future[HttpResponse] = {
     case request:HttpRequest => handleRequest(request)
   }
-
-  implicit def enhanceServerBuilder(builder:HttpServerBuilder):EnhancedServerBuilder = new EnhancedServerBuilder(builder, this)
-}
-
-class EnhancedServerBuilder(builder:HttpServerBuilder, registry:ActionRegistry) {
-
-  def registerController(controller:Controller):HttpServerBuilder = {
-    registry.registerController(controller)
-    builder
-  }
 }
