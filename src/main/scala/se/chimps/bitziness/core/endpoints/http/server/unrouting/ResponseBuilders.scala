@@ -21,11 +21,13 @@ trait ResponseBuilders {
 class ViewExplicitImplicit(response:HttpResponse) {
 
   def withView(view:View):HttpResponse = {
+    val charSet = HttpCharset.custom(view.charset)
+
     val contentType = MediaType.parse(view.contentType) match {
       case Left(errors) => {
         None
       }
-      case Right(mediaType) => Some(mediaType.toContentType)
+      case Right(mediaType) => Some(mediaType.withCharset(charSet))
     }
 
     if (contentType.isEmpty) {

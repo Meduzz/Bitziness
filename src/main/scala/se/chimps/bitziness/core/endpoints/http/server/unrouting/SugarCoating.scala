@@ -4,7 +4,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.http.scaladsl.model.HttpEntity.{Strict, Default, Chunked}
 import akka.http.scaladsl.model.Uri.Query
-import akka.http.scaladsl.model.{HttpEntity, ContentType, HttpRequest}
+import akka.http.scaladsl.model.{HttpCharset, HttpEntity, ContentType, HttpRequest}
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import akka.util.ByteString

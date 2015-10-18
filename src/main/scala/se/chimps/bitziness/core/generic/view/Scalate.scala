@@ -25,4 +25,6 @@ class Scalate(val template:String, val model:Map[String, Any])(implicit val engi
   }
 
   override def contentType: String = "text/html"
+
+  override def charset:String = "utf-8"
 }

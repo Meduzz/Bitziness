@@ -54,4 +54,6 @@ class Jade4JImpl(template:JadeTemplate, model:Map[String, AnyRef], config:Option
   }
 
   override def contentType: String = "text/html"
+
+  override def charset:String = "utf-8"
 }

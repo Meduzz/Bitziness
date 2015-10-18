@@ -4,12 +4,10 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorLogging, ActorRef}
 import akka.http.javadsl.model.headers.SetCookie
-import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.DateTime
-import akka.http.scaladsl.model.headers.{HttpCookie, Cookie}
-import akka.stream.ActorMaterializer
+import akka.http.scaladsl.model.headers.HttpCookie
 import akka.util.Timeout
-import se.chimps.bitziness.core.endpoints.http.server.unrouting.{ResponseBuilders, Action, Controller, Unrouting}
+import se.chimps.bitziness.core.endpoints.http.server.unrouting.{ResponseBuilders, Action, Controller}
 import se.chimps.bitziness.core.endpoints.http.{HttpServerBuilder, HttpServerEndpoint}
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.view.{Jade4j, Scalate}
 import se.chimps.bitziness.core.Service
