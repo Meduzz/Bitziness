@@ -4,11 +4,13 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorLogging, ActorRef}
 import akka.http.javadsl.model.headers.SetCookie
-import akka.http.scaladsl.model.DateTime
+import akka.http.scaladsl.model.{HttpResponse, DateTime}
 import akka.http.scaladsl.model.headers.HttpCookie
-import akka.util.Timeout
+import akka.stream.ActorMaterializer
+import akka.util.{ByteString, Timeout}
+import se.chimps.bitziness.core.endpoints.http.client.RequestBuilders
 import se.chimps.bitziness.core.endpoints.http.server.unrouting.{ResponseBuilders, Action, Controller}
-import se.chimps.bitziness.core.endpoints.http.{HttpServerBuilder, HttpServerEndpoint}
+import se.chimps.bitziness.core.endpoints.http.{ConnectionBuilder, HttpClientEndpoint, HttpServerBuilder, HttpServerEndpoint}
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.view.{Jade4j, Scalate}
 import se.chimps.bitziness.core.Service
 import akka.pattern._
@@ -16,17 +18,30 @@ import scala.concurrent.ExecutionContext.global
 import scala.concurrent.Future
 
 class PingService extends Service {
+  implicit val executor = global
+  implicit val timeout = Timeout(3L, TimeUnit.SECONDS)
+
+  var hts:ActorRef = _
+
   override def handle:Receive = {
     case "PING" => sender() ! "PONG"
+    case "HEALTHCHECK" => {
+      val caller = sender()
+      (hts ? "healthcheck").pipeTo(caller)
+    }
   }
 
   override def initialize():Unit = {
     initEndpoint[PingEndpoint](classOf[PingEndpoint], "Http")
+    hts = initEndpoint[HealthcheckEndpoint](classOf[HealthcheckEndpoint], "Healthchecks")
     healthCheck("PingService", () => 1==1)
   }
 }
 
 class PingEndpoint(val service:ActorRef) extends HttpServerEndpoint with ActorLogging {
+  implicit val timeout = Timeout(3l, TimeUnit.SECONDS)
+  implicit val materializer = ActorMaterializer()(context)
+
   override def createServer(builder:HttpServerBuilder):Future[ActorRef] = {
     healthCheck("PingEndpoint", () => 1==1)
 
@@ -34,11 +49,14 @@ class PingEndpoint(val service:ActorRef) extends HttpServerEndpoint with ActorLo
   }
 
   override def receive:Receive = {
+    case s:String if "ping".equals(s) =>
+      val caller = sender()
+      (service ? s.toUpperCase).mapTo[String].map(_.toLowerCase).pipeTo(caller)
     case s:String =>
-      implicit val timeout = Timeout(3l, TimeUnit.SECONDS)
-      val sender:ActorRef = context.sender()
-      log.info("Pinging service")
-      val pong = (service ? s.toUpperCase).mapTo[String].map(_.toLowerCase).pipeTo(sender)
+      val caller = sender()
+      (service ? s.toUpperCase).mapTo[HttpResponse].map(resp => {
+        resp.entity.dataBytes.runFold(ByteString.empty)((base, in) => base.concat(in))
+      }).map(fut => fut.map(_.utf8String.toLowerCase).pipeTo(caller))
   }
 
   @throws[Exception](classOf[Exception])
@@ -86,8 +104,34 @@ class PingController(val endpoint:ActorRef) extends Controller with ResponseBuil
       Ok().withView(Jade4j.classpath("templates/form.jade", Map("resp" -> s"${map("key")} ${map("value")}")))
     }
   })
+  get("/healthcheck", Action { req =>
+    (endpoint ? "healthcheck").mapTo[String].map(json => {
+      Ok().withEntity(json)
+    })
+  })
 
   implicit def str2bytes(data:String):Array[Byte] = {
     data.getBytes("utf-8")
+  }
+}
+
+/**
+ * Fetches health checks from the /admin/health endpoint.
+ * @param service
+ */
+class HealthcheckEndpoint(val service:ActorRef) extends HttpClientEndpoint with RequestBuilders {
+  implicit val executor = global
+  implicit val timeout = Timeout(3L, TimeUnit.SECONDS)
+
+  override def setupConnection(builder:ConnectionBuilder):ActorRef = {
+    builder.host("localhost", 8080).build(false)
+  }
+
+  override def receive:Receive = {
+    case "healthcheck" => {
+      val caller = sender()
+      println("asking for health checks.")
+      send(request("GET", "/admin/health")).pipeTo(caller)
+    }
   }
 }

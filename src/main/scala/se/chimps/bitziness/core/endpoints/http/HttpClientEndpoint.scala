@@ -130,10 +130,11 @@ private class HttpClientActor extends ActorPublisher[(HttpRequest, Promise[HttpR
 
   override def receive:Receive = {
     case r:RequestTransport => {
+      println(s"has new request. buffer:${buffer.size}")
       if (buffer.size == maxBufferSize) {
         r.promise.failure(new RuntimeException("Buffer is full."))
       } else {
-        buffer :+= r
+        buffer = buffer ++ Seq(r)
         deliver()
       }
     }
@@ -145,7 +146,9 @@ private class HttpClientActor extends ActorPublisher[(HttpRequest, Promise[HttpR
   private final def deliver():Unit = {
     val demand = if (totalDemand <= Int.MaxValue) { totalDemand.toInt } else { Int.MaxValue }
 
-    if (demand > 0) {
+    println(s"If demand ($demand) is higher than 0 we'll deliver a request now.")
+
+    if (demand > 0 && buffer.nonEmpty) {
       val (data, keep) = buffer.splitAt(demand)
       buffer = keep
       send(data)
@@ -154,6 +157,7 @@ private class HttpClientActor extends ActorPublisher[(HttpRequest, Promise[HttpR
   }
 
   private final def send(pieces:Seq[RequestTransport]) = {
+    println(s"Sending ${pieces.size} requests.")
     pieces.foreach { piece =>
       onNext((piece.request, piece.promise))
     }
