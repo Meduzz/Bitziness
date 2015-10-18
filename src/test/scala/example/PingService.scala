@@ -14,18 +14,23 @@ import se.chimps.bitziness.core.endpoints.http.{ConnectionBuilder, HttpClientEnd
 import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.view.{Jade4j, Scalate}
 import se.chimps.bitziness.core.Service
 import akka.pattern._
+import se.chimps.bitziness.core.generic.logging.Log
 import scala.concurrent.ExecutionContext.global
 import scala.concurrent.Future
 
-class PingService extends Service {
+class PingService extends Service with Log {
   implicit val executor = global
   implicit val timeout = Timeout(3L, TimeUnit.SECONDS)
 
   var hts:ActorRef = _
 
   override def handle:Receive = {
-    case "PING" => sender() ! "PONG"
+    case "PING" => {
+      info("Handling a PONG request.", Map("now" -> System.currentTimeMillis().toString))
+      sender() ! "PONG"
+    }
     case "HEALTHCHECK" => {
+      info("Handling a HEALTHCHECK request.")
       val caller = sender()
       (hts ? "healthcheck").pipeTo(caller)
     }
@@ -38,11 +43,13 @@ class PingService extends Service {
   }
 }
 
-class PingEndpoint(val service:ActorRef) extends HttpServerEndpoint with ActorLogging {
+class PingEndpoint(val service:ActorRef) extends HttpServerEndpoint with Log {
   implicit val timeout = Timeout(3l, TimeUnit.SECONDS)
   implicit val materializer = ActorMaterializer()(context)
 
   override def createServer(builder:HttpServerBuilder):Future[ActorRef] = {
+    info("Setting up the PingEndpoint.")
+
     healthCheck("PingEndpoint", () => 1==1)
 
     builder.listen("localhost", 9000).build()
@@ -51,9 +58,11 @@ class PingEndpoint(val service:ActorRef) extends HttpServerEndpoint with ActorLo
   override def receive:Receive = {
     case s:String if "ping".equals(s) =>
       val caller = sender()
+      info("Received a ping request.")
       (service ? s.toUpperCase).mapTo[String].map(_.toLowerCase).pipeTo(caller)
     case s:String =>
       val caller = sender()
+      info(s"Received another request ($s).")
       (service ? s.toUpperCase).mapTo[HttpResponse].map(resp => {
         resp.entity.dataBytes.runFold(ByteString.empty)((base, in) => base.concat(in))
       }).map(fut => fut.map(_.utf8String.toLowerCase).pipeTo(caller))
@@ -119,7 +128,7 @@ class PingController(val endpoint:ActorRef) extends Controller with ResponseBuil
  * Fetches health checks from the /admin/health endpoint.
  * @param service
  */
-class HealthcheckEndpoint(val service:ActorRef) extends HttpClientEndpoint with RequestBuilders {
+class HealthcheckEndpoint(val service:ActorRef) extends HttpClientEndpoint with RequestBuilders with Log {
   implicit val executor = global
   implicit val timeout = Timeout(3L, TimeUnit.SECONDS)
 
@@ -130,7 +139,7 @@ class HealthcheckEndpoint(val service:ActorRef) extends HttpClientEndpoint with 
   override def receive:Receive = {
     case "healthcheck" => {
       val caller = sender()
-      println("asking for health checks.")
+      debug("asking for health checks.")
       send(request("GET", "/admin/health")).pipeTo(caller)
     }
   }
