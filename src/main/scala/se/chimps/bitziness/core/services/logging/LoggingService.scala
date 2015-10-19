@@ -22,13 +22,13 @@ trait LoggingService extends Service with Events with Adapter {
 }
 
 trait Adapter {
-  def info(sender:String, message:String, meta:Map[String, String]) = {}
+  def info(sender:String, message:String, meta:Map[String, String])
 
-  def debug(sender:String, message:String, meta:Map[String, String]) = {}
+  def debug(sender:String, message:String, meta:Map[String, String])
 
-  def error(sender:String, message:String, meta:Map[String, String], error:Option[Throwable]) = {}
+  def error(sender:String, message:String, meta:Map[String, String], error:Option[Throwable])
 
-  def warn(sender:String, message:String, meta:Map[String, String], error:Option[Throwable]) = {}
+  def warn(sender:String, message:String, meta:Map[String, String], error:Option[Throwable])
 
-  def unknown(level:String, sender:String, message:String, meta:Map[String, String], error:Option[Throwable]) = {}
+  def unknown(level:String, sender:String, message:String, meta:Map[String, String], error:Option[Throwable])
 }
