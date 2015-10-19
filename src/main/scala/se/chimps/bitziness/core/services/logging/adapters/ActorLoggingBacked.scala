@@ -37,6 +37,8 @@ class ActorLoggingBacked extends LoggingService with ActorLogging { self:Actor =
     }
   }
 
+  override def unknown(level:String, sender:String, message:String, meta:Map[String, String], error:Option[Throwable]):Unit = {}
+
   def shortSender(sender:String):String = {
     sender.split("\\.").reverse.head
   }
