@@ -8,6 +8,8 @@ resolvers += "spray repo" at "http://repo.spray.io"
 
 resolvers += "rediscala" at "http://dl.bintray.com/etaty/maven"
 
+resolvers += "clojars" at "http://clojars.org/repo"
+
 libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.3.7"
 
 libraryDependencies += "com.typesafe.akka" %% "akka-camel" % "2.3.7"
@@ -39,3 +41,5 @@ libraryDependencies += "de.neuland-bfi" % "jade4j" % "0.4.2"
 libraryDependencies += "com.typesafe.akka" %% "akka-stream-experimental" % "1.0"
 
 libraryDependencies += "com.typesafe.akka" %% "akka-http-core-experimental" % "1.0"
+
+libraryDependencies += "com.aphyr" % "riemann-java-client" % "0.4.0"
