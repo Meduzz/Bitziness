@@ -64,7 +64,7 @@ class RiemannAdapter(val settings:RiemannSettings, override val host:String) ext
 
   override def initialize(): Unit = {
     super.initialize()
-    client = new RiemannBatchClient(RiemannClient.tcp(settings.host, settings.port))
+    client = new RiemannBatchClient(RiemannClient.tcp(settings.host, settings.port), settings.buffer)
   }
 }
 
