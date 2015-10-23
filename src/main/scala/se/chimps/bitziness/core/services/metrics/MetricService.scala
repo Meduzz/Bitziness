@@ -5,12 +5,14 @@ import se.chimps.bitziness.core.generic.Events
 import se.chimps.bitziness.core.generic.metrics._
 
 trait MetricService extends Service with Events with Adapter {
+
+  def host:String
+
   override def handle:Receive = {
-    case Counter(name, value) => counter(name, value)
-    case Gauge(name, value) => gauge(name, value)
-    case Histogram(name, value) => histogram(name, value)
-    case Meter(name, value, timestamp) => meter(name, value, timestamp)
-    case Timer(name, value) => timer(name, value)
+    case LongMetric(long, service, name, state, metadata) => metric(host, service, name, long, state, metadata)
+    case DecimalMetric(deci, service, name, state, metadata) => metric(host, service, name, deci, state, metadata)
+    case BooleanMetric(bool, service, name, state, metadata) => metric(host, service, name, bool, state, metadata)
+    case StringMetric(string, service, name, state, metadata) => metric(host, service, name, string, state, metadata)
   }
 
   override def initialize():Unit = {
@@ -19,9 +21,8 @@ trait MetricService extends Service with Events with Adapter {
 }
 
 trait Adapter {
-  def counter(name:String, value:Long)
-  def gauge(name:String, value:Long)
-  def histogram(name:String, value:BigDecimal)
-  def meter(name:String, value: BigDecimal, timestamp:Long)
-  def timer(name:String, value:Long)
+  def metric(host:String, service:String, name:String, metric:Long, state:Option[String], metadata:Map[String, String])
+  def metric(host:String, service:String, name:String, metric:BigDecimal, state:Option[String], metadata:Map[String, String])
+  def metric(host:String, service:String, name:String, metric:Boolean, state:Option[String], metadata:Map[String, String])
+  def metric(host:String, service:String, name:String, metric:String, state:Option[String], metadata:Map[String, String])
 }

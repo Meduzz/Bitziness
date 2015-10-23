@@ -1,10 +1,10 @@
 package se.chimps.bitziness.core.generic
 
-import akka.actor.ActorRef
+import akka.actor.Actor
 
 /**
  * Allows us to set a name on the actor.
  */
-trait Naming { parent:ActorRef =>
+trait Naming { parent:Actor =>
   def name():String
 }
