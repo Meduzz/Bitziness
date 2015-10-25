@@ -59,8 +59,8 @@ class FluentDEndpoint(val service:ActorRef, val settings:FluentDSettings) extend
   }
 
   override def receive: Receive = {
-    case s:(String, FluentLogMessage) => {
-      connection ! HttpRequest(HttpMethods.POST, Uri(s"/${s._1}"), entity = HttpEntity(ContentTypes.`application/json`, s"json={${toJSON(s._2)}}"))
+    case Tuple2(logger:String, message:FluentLogMessage) => {
+      connection ! HttpRequest(HttpMethods.POST, Uri(s"/${logger}"), entity = HttpEntity(ContentTypes.`application/json`, s"json={${toJSON(message)}}"))
     }
   }
 }

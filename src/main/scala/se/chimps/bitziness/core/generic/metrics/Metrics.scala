@@ -4,22 +4,23 @@ import akka.actor.Actor
 import se.chimps.bitziness.core.generic.{Naming, Event, Events}
 
 import scala.concurrent.{Promise, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 trait Metrics extends Events { myself:Actor with Naming =>
 
-  def metric(metricName:String, metric:Long, state:Option[String] = None, metadata:Map[String, String] = Map()) = {
+  def longMetric(metricName:String, metric:Long, state:Option[String] = None, metadata:Map[String, String] = Map()) = {
     publish(LongMetric(metric, name(), metricName, state, metadata))
   }
 
-  def metric(metricName:String, metric:BigDecimal, state:Option[String] = None, metadata:Map[String, String] = Map()) = {
+  def decimalMetric(metricName:String, metric:BigDecimal, state:Option[String] = None, metadata:Map[String, String] = Map()) = {
     publish(DecimalMetric(metric, name(), metricName, state, metadata))
   }
 
-  def metric(metricName:String, metric:Boolean, state:Option[String] = None, metadata:Map[String, String] = Map()) = {
+  def booleanMetric(metricName:String, metric:Boolean, state:Option[String] = None, metadata:Map[String, String] = Map()) = {
     publish(BooleanMetric(metric, name(), metricName, state, metadata))
   }
 
-  def metric(metricName:String, metric:String, state:Option[String] = None, metadata:Map[String, String] = Map()) = {
+  def stringMetric(metricName:String, metric:String, state:Option[String] = None, metadata:Map[String, String] = Map()) = {
     publish(StringMetric(metric, name(), metricName, state, metadata))
   }
 
@@ -28,19 +29,19 @@ trait Metrics extends Events { myself:Actor with Naming =>
     val output = op(input)
     val end = System.nanoTime()
 
-    metric(name, end-start)
+    longMetric(name, end-start)
 
     output
   }
 
-  def timed[T, K](name:String)(op:(T)=>Future[K]):(T)=>Future[K] = (input:T) => {
+  def timedFuture[T, K](name:String)(op:(T)=>Future[K]):(T)=>Future[K] = (input:T) => {
     val start= System.nanoTime()
     val promise = Promise[K]()
 
     op(input).foreach(k => {
       val end = System.nanoTime()
       promise.success(k)
-      metric(name, end - start)
+      longMetric(name, end - start)
     })
 
     promise.future
