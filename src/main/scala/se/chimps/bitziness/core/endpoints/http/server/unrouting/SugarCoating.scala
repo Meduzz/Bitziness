@@ -2,16 +2,16 @@ package se.chimps.bitziness.core.endpoints.http.server.unrouting
 
 import java.util.concurrent.TimeUnit
 
-import akka.http.scaladsl.model.HttpEntity.{Strict, Default, Chunked}
+import akka.http.scaladsl.model.HttpEntity.{Chunked, Default, Strict}
 import akka.http.scaladsl.model.Uri.Query
-import akka.http.scaladsl.model.{HttpCharset, HttpEntity, ContentType, HttpRequest}
+import akka.http.scaladsl.model.{ContentType, HttpRequest}
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import akka.util.ByteString
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
-import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  *
@@ -28,6 +28,8 @@ trait SugarCoating {
   def param(names:String*):Seq[Option[String]] = names.map(k => params.get(k)).seq
 
   def cookie(name:String):Option[String] = raw.cookies.find(c => c.name.equals(name)).map(c => c.value)
+
+  def header(name:String):Option[String] = raw.headers.find(h => h.name().toLowerCase.equals(name.toLowerCase)).map(h => h.value())
 
   def asFormData():Future[Map[String, String]] = {
     val decoder = new StringDecoder()
