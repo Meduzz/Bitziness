@@ -3,7 +3,7 @@ package se.chimps.bitziness.core.services.metrics.adapters
 import com.aphyr.riemann.client.{RiemannClient, RiemannBatchClient, IRiemannClient}
 import se.chimps.bitziness.core.services.metrics.MetricService
 
-class RiemannAdapter(val settings:RiemannSettings, override val host:String) extends MetricService {
+class RiemannMetricsService(val settings:RiemannSettings, override val host:String) extends MetricService {
 
   var client:IRiemannClient = _
 

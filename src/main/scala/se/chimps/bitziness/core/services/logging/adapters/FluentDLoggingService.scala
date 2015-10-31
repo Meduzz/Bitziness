@@ -6,7 +6,7 @@ import se.chimps.bitziness.core.endpoints.http.{ConnectionBuilder, HttpClientEnd
 import se.chimps.bitziness.core.generic.Serializers.JSONSerializer
 import se.chimps.bitziness.core.services.logging.LoggingService
 
-class FluentDBacked(val settings:FluentDSettings, val server:String, val service:String) extends LoggingService {
+class FluentDLoggingService(val settings:FluentDSettings, val server:String, val service:String) extends LoggingService {
 
   var fluentd:ActorRef = _
 
