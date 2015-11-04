@@ -47,27 +47,27 @@ trait Configs {
     }
   }
 
-  def asIntList(key:String):Option[List[Int]] = {
+  def asIntList(key:String):List[Int] = {
     if (config.hasPath(key)) {
-      Some(config.getIntList(key).asScala.map(i => i.toInt).toList) // jeez!
+      config.getIntList(key).asScala.map(i => i.toInt).toList
     } else {
-      None
+      List()
     }
   }
 
-  def asBooleanList(key:String):Option[List[Boolean]] = {
+  def asBooleanList(key:String):List[Boolean] = {
     if (config.hasPath(key)) {
-      Some(config.getBooleanList(key).asScala.map(b => b.booleanValue()).toList)
+      config.getBooleanList(key).asScala.map(b => b.booleanValue()).toList
     } else {
-      None
+      List()
     }
   }
 
-  def asStringList(key:String):Option[List[String]] = {
+  def asStringList(key:String):List[String] = {
     if (config.hasPath(key)) {
-      Some(config.getStringList(key).asScala.toList)
+      config.getStringList(key).asScala.toList
     } else {
-      None
+      List()
     }
   }
 

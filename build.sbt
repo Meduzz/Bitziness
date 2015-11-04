@@ -43,3 +43,5 @@ libraryDependencies += "com.typesafe.akka" %% "akka-stream-experimental" % "1.0"
 libraryDependencies += "com.typesafe.akka" %% "akka-http-core-experimental" % "1.0"
 
 libraryDependencies += "com.aphyr" % "riemann-java-client" % "0.4.0"
+
+libraryDependencies += "com.couchbase.client" % "java-client" % "2.0.3"
