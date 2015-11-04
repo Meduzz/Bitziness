@@ -1,10 +1,10 @@
 package se.chimps.bitziness.core.endpoints.redis
 
-import akka.actor.{ActorRef, Props, ActorSystem}
-import akka.testkit.{TestProbe, TestKitBase}
+import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.testkit.{TestKitBase, TestProbe}
 import org.scalatest._
-import redis.{RedisClient, RedisPubSub}
-import redis.api.pubsub.{PMessage, Message}
+import redis.RedisPubSub
+import redis.api.pubsub.{Message, PMessage}
 
 /**
  * Test the redis pubsub system.
@@ -40,9 +40,9 @@ class RedisPubSubTest extends FunSuite with TestKitBase with BeforeAndAfterAll {
 
 object Redis extends Tag("Depends on a running redis")
 
-class MyService(val service:ActorRef) extends RedisPubSubTrait with RedisPubSubMethods {
+class MyService(val service:ActorRef) extends RedisPubSubEndpoint with RedisPubSubMethods {
 
-  override protected def setupRedisPubSub(builder: RedisBuilder):Tuple2[RedisClient, RedisPubSub] = {
+  override protected def setupRedisPubSub(builder: RedisBuilder):RedisPubSub = {
     builder.subscribeChannel("a.b.c", "test")
       .subscribePattern("a.b.?", "te*")
       .build()

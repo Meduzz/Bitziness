@@ -7,14 +7,13 @@ import akka.http.scaladsl.model.HttpEntity.{ChunkStreamPart, Chunked, Strict}
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
-import org.scalatest.{fixture, FunSuite}
+import org.scalatest.FunSuite
 import se.chimps.bitziness.core.endpoints.http.client.RequestBuilders
 import se.chimps.bitziness.core.endpoints.http.server.unrouting._
 
-import scala.collection.parallel.immutable
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  *
@@ -35,7 +34,7 @@ class HttpServerEndpointTest extends FunSuite with Unrouting with RequestBuilder
     expectResponse(200, Seq("file.html"))(handleRequest(request("GET", "/static/file.html")))
     expectResponse(200, Seq("some.kind.of.key"))(handleRequest(request("GET", "/key/some.kind.of.key")))
     expectResponse(200, Seq("Your name is John Doe."))(handleRequest(request("POST", "/form").withEntity("surname=Doe&name=John")))
-    expectResponse(200, Seq("ew", "ekil", "sknuhc"))(handleRequest(request("PUT", "/chunks").withEntity(Chunked.apply(ContentTypes.`text/plain`, Source(chunks))))) // chunks needs to be of scala.collection.immutable apparently.
+    expectResponse(200, Seq("ew", "ekil", "sknuhc"))(handleRequest(request("PUT", "/chunks").withEntity(Chunked(ContentTypes.`text/plain`, Source(chunks))))) // chunks needs to be of scala.collection.immutable apparently.
   }
 
   def expectResponse(status:Int, body:Seq[String], headers:Seq[HttpHeader] = Seq())(futureResponse:Future[HttpResponse]): Unit = {
@@ -72,14 +71,14 @@ class MyController extends Controller with ResponseBuilders {
   }))
   get("/extract/:a/and/:b", Action.sync { req =>
     val Seq(a, b) = req.param("a", "b")
-    Ok().withEntity(s"Hello $a and $b!")
+    Ok().withEntity(s"Hello ${a.getOrElse("")} and ${b.getOrElse("")}!")
   })
   get("/crash", Action.sync { req =>
     throw new RuntimeException("TBD")
   })
   get("/static/:file.:ending", Action.sync { req =>
     val Seq(file, ending) = req.param("file", "ending")
-    Ok().withEntity(s"$file.$ending")
+    Ok().withEntity(s"${file.getOrElse("")}.${ending.getOrElse("")}")
   })
   get("/key/:rest", Action.sync { req =>
     Ok().withEntity(req.param("rest").getOrElse("failed"))
