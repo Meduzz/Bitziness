@@ -47,3 +47,5 @@ libraryDependencies += "com.aphyr" % "riemann-java-client" % "0.4.0"
 libraryDependencies += "com.couchbase.client" % "java-client" % "2.0.3"
 
 libraryDependencies += "net.fwbrasil" % "activate-core_2.10" % "1.6"
+
+libraryDependencies += "org.neo4j" % "neo4j" % "2.3.0"
