@@ -138,12 +138,12 @@ private class HttpClientActor extends ActorPublisher[(HttpRequest, Promise[HttpR
       }
     }
     case Request(_) => deliver()
-    case Cancel => context.stop(self) // TODO do we need to clean buffer?
+    case Cancel => context.stop(self) // TODO clean buffer, call onComplete.
   }
 
   @tailrec
   private final def deliver():Unit = {
-    val demand = if (totalDemand <= Int.MaxValue) { totalDemand.toInt } else { Int.MaxValue }
+    val demand = if (totalDemand <= Int.MaxValue && isActive) { totalDemand.toInt } else { Int.MaxValue }
 
     if (demand > 0 && buffer.nonEmpty) {
       val (data, keep) = buffer.splitAt(demand)

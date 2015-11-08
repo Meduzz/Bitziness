@@ -6,6 +6,8 @@ import se.chimps.bitziness.core.generic.metrics._
 
 trait MetricService extends Service with Events with Adapter {
 
+  // TODO add optional timestamp to all metrics.
+
   def host:String
 
   override def handle:Receive = {

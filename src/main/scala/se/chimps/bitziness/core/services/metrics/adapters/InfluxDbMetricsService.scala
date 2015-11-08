@@ -1,8 +1,10 @@
 package se.chimps.bitziness.core.services.metrics.adapters
 
-import akka.actor.ActorRef
+import akka.actor.{ActorLogging, ActorRef}
+import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.{HttpResponse, Uri, HttpMethods, HttpRequest}
 import se.chimps.bitziness.core.endpoints.http.{ConnectionBuilder, HttpClientEndpoint}
+import se.chimps.bitziness.core.generic.ActorFactory
 import se.chimps.bitziness.core.services.metrics.MetricService
 
 class InfluxDbMetricsService(val settings:InfluxSettings, override val host:String) extends MetricService {
@@ -22,16 +24,18 @@ class InfluxDbMetricsService(val settings:InfluxSettings, override val host:Stri
       case true => "t"
       case _ => "f"
     }
+
     influxdb ! s"$name,host=$host,service=$service${convert(state)}${meta(metadata)} value=${value}"
   }
 
   override def metric(host:String, service: String, name: String, metric: String, state: Option[String], metadata: Map[String, String]): Unit = {
-    influxdb ! s"$name,host=$host,service=$service${convert(state)}${meta(metadata)} value=${metric}"
+    influxdb ! s"""$name,host=$host,service=$service${convert(state)}${meta(metadata)} value=\"${metric}\""""
   }
 
   override def initialize(): Unit = {
     super.initialize()
-    influxdb = initEndpoint(new InfluxDbEndpoint(self, settings), s"influxdb-${settings.host}:${settings.port}")
+    val factory = ActorFactory(s"influxdb-${settings.host}:${settings.port}", () => new InfluxDbEndpoint(self, settings))
+    influxdb = initEndpoint(factory)
   }
 
   def meta(metadata:Map[String, String]):String = {
@@ -54,11 +58,13 @@ case class InfluxSettings(host:String, port:Int, db:String, username:Option[Stri
 class InfluxDbEndpoint(val service:ActorRef, val settings:InfluxSettings) extends HttpClientEndpoint {
   var buffer:Seq[String] = Seq()
 
+  // TODO implement a send every X second feature.
+
   override def setupConnection(builder: ConnectionBuilder): ActorRef = {
     builder.host(settings.host, settings.port).build(settings.secure)
   }
 
-  def uri:String = s"/write?${settings.db}${settings.username.map(u => s"&u=$u")}${settings.password.map(p => s"&p=$p")}"
+  def uri:String = s"/write?db=${settings.db}${settings.username.map(u => s"&u=$u").getOrElse("")}${settings.password.map(p => s"&p=$p").getOrElse("")}"
 
   override def receive: Receive = {
     case s:String => bufferAndSend(s)
@@ -66,9 +72,10 @@ class InfluxDbEndpoint(val service:ActorRef, val settings:InfluxSettings) extend
   }
 
   def bufferAndSend(metric:String) = {
-    if (buffer.size + 1 >= 100) {
+    if (buffer.size + 1 >= settings.buffer) {
       val data = (buffer ++ Seq(metric)).mkString("\n")
-      connection ! HttpRequest(HttpMethods.POST, Uri(uri), entity = data)
+      send(HttpRequest(HttpMethods.POST, uri = Uri(uri), entity = data))
+      buffer = Seq()
     } else {
       buffer = buffer ++ Seq(metric)
     }
