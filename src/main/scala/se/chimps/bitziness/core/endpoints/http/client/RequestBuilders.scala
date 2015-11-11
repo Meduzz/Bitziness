@@ -2,6 +2,8 @@ package se.chimps.bitziness.core.endpoints.http.client
 
 import akka.http.scaladsl.model._
 
+import scala.collection.immutable._
+
 /**
  *
  */

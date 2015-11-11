@@ -9,30 +9,30 @@ import scala.util.{Failure, Success, Try}
 
 trait ActivateFactory extends Configs {
 
-  def context:ActivateContext
+  def dbContext:ActivateContext
 
-  def withTransaction[T](op:()=>T):T = {
-    context.transactional {
+  def transaction[T](op:()=>T):T = {
+    dbContext.transactional {
       op()
     }
   }
 
-  def withTransaction[T](op:()=>T):Try[T] = {
-    val tx = new Transaction()
+  def tryTransaction[T](op:()=>T):Try[T] = {
+    val tx = new Transaction()(dbContext)
     val t = Try {
-      context.transactional(tx) {
+      dbContext.transactional(tx) {
         op()
       }
     }
 
     t match {
-      case s:Success => tx.commit(); s
-      case f:Failure => tx.rollback(); f
+      case s:Success[T] => tx.commit(); s
+      case f:Failure[T] => tx.rollback(); f
     }
   }
 
-  def withAsyncTransaction[T](op:()=>T):Future[T] = {
-    context.asyncTransactional {
+  def asyncTransaction[T](op:()=>T):Future[T] = {
+    dbContext.asyncTransactional {
       op()
     }
   }
