@@ -32,14 +32,8 @@ trait Bitziness {
     actor
   }
 
-  def initService(factory:ActorFactory[Service]):ActorRef = {
-    val actor = factory.actor()
-    actor ! Init
-    actor
-  }
-
-  def initService[T<:Service with Naming](service:T)(implicit tag:ClassTag[T]):ActorRef = {
-    val actor = system.actorOf(Props(service), service.name())
+  def initService[T<:Service](factory:ActorFactory[T])(implicit tag:ClassTag[T]):ActorRef = {
+    val actor = system.actorOf(Props(factory.actor), factory.name)
     actor ! Init
     actor
   }

@@ -49,12 +49,10 @@ class RiemannMetricsService(val settings:RiemannSettings, override val host:Stri
   }
 
   override def metric(host: String, service: String, name: String, metric: String, state: Option[String], metadata: Map[String, String]): Unit = {
-    val value = BigDecimal(metric)
-
     val event = client.event()
       .host(host)
       .service(s"$service.$name")
-      .metric(value.floatValue())
+      .tag(metric)
 
     state.foreach(event.state)
     metadata.foreach(map => event.attribute(map._1, map._2))
@@ -65,6 +63,14 @@ class RiemannMetricsService(val settings:RiemannSettings, override val host:Stri
   override def initialize(): Unit = {
     super.initialize()
     client = new RiemannBatchClient(RiemannClient.tcp(settings.host, settings.port), settings.buffer)
+    client.connect()
+  }
+
+  @throws[Exception](classOf[Exception])
+  override def postStop():Unit = {
+    super.postStop()
+    client.flush()
+    client.close()
   }
 }
 

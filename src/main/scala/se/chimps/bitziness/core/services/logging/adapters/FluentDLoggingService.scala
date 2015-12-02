@@ -1,8 +1,10 @@
 package se.chimps.bitziness.core.services.logging.adapters
 
-import akka.actor.ActorRef
+import akka.actor.{Stash, ActorRef}
 import akka.http.scaladsl.model._
+import akka.util.ByteString
 import se.chimps.bitziness.core.endpoints.http.{ConnectionBuilder, HttpClientEndpoint}
+import se.chimps.bitziness.core.generic.ActorFactory
 import se.chimps.bitziness.core.generic.Serializers.JSONSerializer
 import se.chimps.bitziness.core.services.logging.LoggingService
 
@@ -32,7 +34,8 @@ class FluentDLoggingService(val settings:FluentDSettings, val server:String, val
 
   override def initialize(): Unit = {
     super.initialize()
-    fluentd = initEndpoint(new FluentDEndpoint(self, settings), "FluentDEndpoint")
+    val factory = ActorFactory(s"fluentd-${settings.host}:${settings.port}", () => new FluentDEndpoint(self, settings))
+    fluentd = initEndpoint(factory)
   }
 
   def asJson(level:String, sender:String, message:String, meta:Map[String, String], error:Option[Throwable]):(String, FluentLogMessage) = {
@@ -60,7 +63,7 @@ class FluentDEndpoint(val service:ActorRef, val settings:FluentDSettings) extend
 
   override def receive: Receive = {
     case Tuple2(logger:String, message:FluentLogMessage) => {
-      connection ! HttpRequest(HttpMethods.POST, Uri(s"/${logger}"), entity = HttpEntity(ContentTypes.`application/json`, s"json={${toJSON(message)}}"))
+      send(HttpRequest(HttpMethods.POST, uri = Uri(s"/$logger"), entity = HttpEntity(ContentTypes.`application/json`, toJSON(message))))
     }
   }
 }
