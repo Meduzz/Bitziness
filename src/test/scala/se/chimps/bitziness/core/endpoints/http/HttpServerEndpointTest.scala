@@ -8,6 +8,7 @@ import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import org.scalatest.FunSuite
+import org.scalatest.concurrent.ScalaFutures
 import se.chimps.bitziness.core.endpoints.http.client.RequestBuilders
 import se.chimps.bitziness.core.endpoints.http.server.unrouting._
 
@@ -18,7 +19,7 @@ import scala.concurrent.{Await, Future}
 /**
  *
  */
-class HttpServerEndpointTest extends FunSuite with Unrouting with RequestBuilders {
+class HttpServerEndpointTest extends FunSuite with Unrouting with RequestBuilders with ScalaFutures {
 
   implicit val materializer = ActorMaterializer()(ActorSystem("akka-http-server"))
 
@@ -46,15 +47,15 @@ class HttpServerEndpointTest extends FunSuite with Unrouting with RequestBuilder
       assert(response.getHeader(h.name()).get.value().equals(h.value()), s"Header value of ${h.name()} did not match, was ${response.getHeader(h.name()).get.value()}, expected ${h.value()}.")
     })
 
-    val entityData = response.entity match {
+    val entityData:Seq[String] = response.entity match {
       case s:Strict => Seq(s.data.utf8String)
       case d:Chunked => {
-        var seq = Seq[String]()
-        val unchunking = d.dataBytes.map(_.utf8String).runForeach{ bit =>
-          seq :+= bit
+        val unchunked = d.dataBytes.map(_.utf8String).runFold[Seq[String]](Seq[String]())((a, b) => { a ++ Seq(b) })
+
+        whenReady(unchunked) { chunks =>
+          println(chunks)
+          chunks
         }
-        Await.ready(unchunking, Duration(3L, TimeUnit.SECONDS))
-        seq
       }
       case _ => Seq()
     }
@@ -88,9 +89,11 @@ class MyController extends Controller with ResponseBuilders {
       Ok().withEntity(s"Your name is ${data("name")} ${data("surname")}.")
     }
   })
-  put("/chunks", Action.sync { req =>
-    var chunks:List[String] = List()
-    req.asEntityStream(new StringDecoder())(str => str.foreach(chunks :+= _))
-    Ok().withEntity(Chunked(ContentTypes.`text/plain`, Source(chunks.map(_.reverse).map(ChunkStreamPart(_)))))
+  put("/chunks", Action { req =>
+    req.asEntityStream(new StringDecoder()).map(chunks => {
+      import scala.collection.immutable.Seq
+      val bits = Seq.concat(chunks.map(_.reverse).map(ChunkStreamPart(_)))
+      Ok().withEntity(Chunked(ContentTypes.`text/plain`, Source(bits)))
+    })
   })
 }

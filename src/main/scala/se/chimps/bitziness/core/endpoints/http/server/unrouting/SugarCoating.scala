@@ -2,7 +2,7 @@ package se.chimps.bitziness.core.endpoints.http.server.unrouting
 
 import java.util.concurrent.TimeUnit
 
-import akka.http.scaladsl.model.HttpEntity.{Chunked, Default, Strict}
+import akka.http.scaladsl.model.HttpEntity._
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{ContentType, HttpRequest}
 import akka.stream.Materializer
@@ -18,7 +18,6 @@ import scala.concurrent.duration.Duration
  */
 // TODO these asX methods will prolly fail on a second request.
 // TODO move durations to implicits.
-// TODO add a asEntityStream with fold instead of foreach.
 trait SugarCoating {
   def raw:HttpRequest
   def params:Map[String, String]
@@ -67,11 +66,11 @@ trait SugarCoating {
     }
   }
 
-  def asEntityStream[T](decoder: Decoder[T])(func:(Future[T])=>Unit):Unit = {
+  def asEntityStream[T](decoder: Decoder[T]):Future[Seq[T]] = {
     raw.entity match {
-      case c:Chunked => c.chunks.map(chunk => decoder.decode(c.contentType)(chunk.data())).runForeach(func)
-      case s:Strict => func(decoder.decode(s.contentType)(s.data))
-      case d:Default => d.dataBytes.map(decoder.decode(d.contentType)(_)).runForeach(func)
+      case c:Chunked => c.chunks.runWith(Sink.fold[Seq[Future[T]], ChunkStreamPart](Seq())((seq, data) => seq ++ Seq(decoder.decode(c.contentType)(data.data())))).map(Future.sequence(_)).flatMap(s => s)
+      case s:Strict => decoder.decode(s.contentType)(s.data).map(Seq(_))
+      case d:Default => d.data.runWith(Sink.fold[Seq[Future[T]], ByteString](Seq())((seq, data) => seq ++ Seq(decoder.decode(d.contentType)(data)))).map(Future.sequence(_)).flatMap(s => s)
     }
   }
 

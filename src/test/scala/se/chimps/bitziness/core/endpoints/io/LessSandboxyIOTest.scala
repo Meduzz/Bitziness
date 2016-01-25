@@ -101,7 +101,7 @@ class Client(override val service:ActorRef) extends ClientIOEndpoint(service) {
   }
 
   override def onCommandFailed(cmd: CommandFailed): Unit = {
-    println("Some command failed in the client.")
+    println(s"A command failed in the SomeRpcClient. (${cmd.cmd})")
   }
 }
 

@@ -1,14 +1,14 @@
 package se.chimps.bitziness.core.endpoints.http
 
-import akka.actor.{ActorSystem, ActorRef, Props}
+import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.event.LoggingAdapter
-import akka.http.scaladsl.model.{HttpResponse, HttpRequest}
 import akka.http.ConnectionPoolSettings
-import akka.http.scaladsl.{HttpsContext, Http}
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
+import akka.http.scaladsl.{Http, HttpsContext}
 import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.{Cancel, Request}
+import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
-import akka.stream.scaladsl.{Sink, Source, Flow}
 import se.chimps.bitziness.core.Endpoint
 
 import scala.annotation.tailrec

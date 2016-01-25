@@ -13,12 +13,12 @@ trait RedisPubSubEndpoint extends RedisEndpoint with ActorLogging {
   implicit val system = context.system
 
   def onMessage(msg: Message): Unit = {
-    log.info("Received message: {}", msg)
+    log.debug("Received message: {}", msg)
     self ! msg
   }
 
   def onPMessage(msg:PMessage):Unit = {
-    log.info("Received pmessage: {}", msg)
+    log.debug("Received pmessage: {}", msg)
     self ! msg
   }
 
