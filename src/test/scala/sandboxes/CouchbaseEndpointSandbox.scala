@@ -1,9 +1,9 @@
-package sandbox
+package sandboxes
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{Props, ActorSystem, ActorRef}
-import akka.pattern.PipeToSupport
+import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.pattern.{PipeToSupport, ask}
 import akka.util.Timeout
 import com.couchbase.client.java.document.{JsonDocument, RawJsonDocument}
 import com.couchbase.client.java.env.DefaultCouchbaseEnvironment
@@ -11,9 +11,8 @@ import se.chimps.bitziness.core.Service
 import se.chimps.bitziness.core.generic.Init
 import se.chimps.bitziness.core.generic.Serializers.JSONSerializer
 import se.chimps.bitziness.core.generic.persistence.couchbase.endpoint.CouchbaseEndpoint
-import scala.concurrent.ExecutionContext.Implicits.global
-import akka.pattern.ask
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 

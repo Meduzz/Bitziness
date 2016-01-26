@@ -46,6 +46,7 @@ class PingService extends Service with Log {
 class PingEndpoint(val service:ActorRef) extends HttpServerEndpoint with Log {
   implicit val timeout = Timeout(3l, TimeUnit.SECONDS)
   implicit val materializer = ActorMaterializer()(context)
+  implicit val ec = context.dispatcher
 
   override def createServer(builder:HttpServerBuilder):Future[ActorRef] = {
     info("Setting up the PingEndpoint.")

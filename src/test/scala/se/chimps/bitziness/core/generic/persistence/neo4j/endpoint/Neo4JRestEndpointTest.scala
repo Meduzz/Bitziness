@@ -7,11 +7,12 @@ import akka.testkit.{TestKitBase, TestProbe}
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import se.chimps.bitziness.core.endpoints.http.ConnectionBuilder
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext.Implicits
 import scala.concurrent.Future
 
 class Neo4JRestEndpointTest extends FunSuite with TestKitBase with BeforeAndAfterAll {
   import TestModel._
+  import Implicits.global
 
   implicit lazy val system = ActorSystem("neo4j-rest")
 
@@ -115,6 +116,8 @@ object TestModel {
 
 class TestNeo4JEndpoint(override val service:ActorRef) extends Neo4JRestEndpoint with PipeToSupport {
   import TestModel._
+
+  implicit val ec = Implicits.global
 
   override def username: Option[String] = Some("neo4j")
   override def password: String = "sp4msp4m"

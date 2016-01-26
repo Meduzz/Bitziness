@@ -9,8 +9,7 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import akka.util.ByteString
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 
 /**
@@ -22,6 +21,7 @@ trait SugarCoating {
   def raw:HttpRequest
   def params:Map[String, String]
   implicit def materializer:Materializer
+  implicit def ec:ExecutionContext
 
   def param(name:String):Option[String] = params.get(name)
   def param(names:String*):Seq[Option[String]] = names.map(k => params.get(k)).seq
@@ -79,9 +79,9 @@ trait SugarCoating {
 }
 
 trait Decoder[T] {
-  def decode(contentType: ContentType)(data:ByteString):Future[T]
+  def decode(contentType: ContentType)(data:ByteString)(implicit ec:ExecutionContext):Future[T]
 }
 
 class StringDecoder extends Decoder[String] {
-  override def decode(contentType:ContentType)(data:ByteString):Future[String] = Future(data.decodeString(contentType.charset().value)).mapTo[String]
+  override def decode(contentType:ContentType)(data:ByteString)(implicit ec:ExecutionContext):Future[String] = Future(data.decodeString(contentType.charset().value)).mapTo[String]
 }

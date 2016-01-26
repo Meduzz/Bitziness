@@ -10,10 +10,9 @@ import se.chimps.bitziness.core.generic.Serializers.JSONSerializer
 
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
-import scala.concurrent.{Promise, Future}
+import scala.concurrent.{ExecutionContext, Promise, Future}
 import scala.reflect.ClassTag
 import scala.util.{Success, Failure, Try}
-import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * Some caching abstractions and implementations.
@@ -35,7 +34,7 @@ object LocalCache {
   class LocalCacheFactory(val config:LocalConfig) {
     lazy val cacheStore = TrieMap[Class[_], Cache[_]]()
 
-    def load[C]()(implicit evidence:ClassTag[C]):Cache[C] = {
+    def load[C]()(implicit evidence:ClassTag[C], ec:ExecutionContext):Cache[C] = {
       if (!cacheStore.contains(evidence.runtimeClass)) {
         cacheStore.put(evidence.runtimeClass, new LocalCache[C](config))
       }
@@ -52,7 +51,7 @@ object LocalCache {
     }
   }
 
-  private class LocalCache[T](val config:LocalConfig)(implicit tag:ClassTag[T]) extends Cache[T] {
+  private class LocalCache[T](val config:LocalConfig)(implicit tag:ClassTag[T], ec:ExecutionContext) extends Cache[T] {
 
     lazy val weight = config.weights.getOrElse(tag.runtimeClass, 1)
     protected lazy val store = TrieMap[String, Item[T]]()
@@ -103,10 +102,10 @@ object RedisCache {
                          , maxKeys:Option[Int] = None)
 
   class RedisCacheFactory(val config:RedisConfig)(implicit val system:ActorSystem) {
-    def load[C]()(implicit evidence: Manifest[C]): Cache[C] = new RedisCache[C](config.expireSec, config.maxKeys, RedisClient(config.host, config.port, config.auth, config.db))
+    def load[C]()(implicit evidence: Manifest[C], ec:ExecutionContext): Cache[C] = new RedisCache[C](config.expireSec, config.maxKeys, RedisClient(config.host, config.port, config.auth, config.db))
   }
 
-  class RedisCache[C](val expire:Option[Int], val maxKeys:Option[Int], val client:RedisClient)(implicit val evidence:Manifest[C]) extends Cache[C] with JSONSerializer {
+  class RedisCache[C](val expire:Option[Int], val maxKeys:Option[Int], val client:RedisClient)(implicit val evidence:Manifest[C], ec:ExecutionContext) extends Cache[C] with JSONSerializer {
 
     val prefix = (key:String)=>s"cache.$key"
     val keysSet = "cachedkeys"

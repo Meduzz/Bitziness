@@ -1,10 +1,9 @@
 package se.chimps.bitziness.core.endpoints.http.server.unrouting
 
-import akka.http.scaladsl.model.{StatusCodes, HttpResponse, HttpRequest}
+import akka.http.scaladsl.model.{HttpResponse, HttpRequest}
 import akka.stream.Materializer
 
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
  *
@@ -13,7 +12,7 @@ trait Engine {
 
   private[unrouting] def actions:Map[String, List[ActionDefinition]]
 
-  def handleRequest(request:HttpRequest)(implicit materializer: Materializer):Future[HttpResponse] = {
+  def handleRequest(request:HttpRequest)(implicit materializer: Materializer, ec:ExecutionContext):Future[HttpResponse] = {
 
     val response = for {
       candidate <- findCandidate(method(request), url(request))
@@ -33,7 +32,7 @@ trait Engine {
     }
   }
 
-  private def findCandidate(method:String, url:String):Future[ActionDefinition] = {
+  private def findCandidate(method:String, url:String)(implicit ec:ExecutionContext):Future[ActionDefinition] = {
     Future {
       val action = actions(method).par.find(d => url.matches(d.pathRegex.regex))
 
@@ -44,7 +43,7 @@ trait Engine {
     }
   }
 
-  private def executeAction(url:String, request:HttpRequest, action:ActionDefinition)(implicit materializer: Materializer):Future[HttpResponse] = {
+  private def executeAction(url:String, request:HttpRequest, action:ActionDefinition)(implicit materializer: Materializer, ec:ExecutionContext):Future[HttpResponse] = {
     val matcher = action.pathRegex.pattern.matcher(url)
     val pathParams:Map[String, String] = if (matcher.matches()) {
       val groups = (0 to matcher.groupCount()).map(b => matcher.group(b))
@@ -53,7 +52,7 @@ trait Engine {
       Map()
     }
 
-    action.action(UnroutingRequest(request, request.uri.query.toMap ++ pathParams, materializer))
+    action.action(UnroutingRequest(request, request.uri.query.toMap ++ pathParams, materializer, ec))
   }
 
   private def method(request: HttpRequest):String = {

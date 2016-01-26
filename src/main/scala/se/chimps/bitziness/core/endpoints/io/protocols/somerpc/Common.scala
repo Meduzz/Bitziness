@@ -9,8 +9,7 @@ import akka.pattern.PipeToSupport
 import akka.util.{ByteIterator, ByteString}
 import se.chimps.bitziness.core.endpoints.io.Common.ConnectionBase
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.hashing.MurmurHash3
 
 object Common {
@@ -104,7 +103,7 @@ object Common {
   }
 
   trait RpcHelpers extends ByteStringHelpers with PromiseStore with PipeToSupport { self:ConnectionBase =>
-
+    implicit val ec = context.dispatcher
     def service:ActorRef
     val encoder:Option[PartialFunction[ByteString, ByteString]] = None
     val decoder:Option[PartialFunction[ByteString, ByteString]] = None

@@ -3,8 +3,7 @@ package se.chimps.bitziness.core.generic.metrics
 import akka.actor.Actor
 import se.chimps.bitziness.core.generic.{Naming, Event, Events}
 
-import scala.concurrent.{Promise, Future}
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{ExecutionContext, Promise, Future}
 
 trait Metrics extends Events { myself:Actor with Naming =>
 
@@ -34,7 +33,7 @@ trait Metrics extends Events { myself:Actor with Naming =>
     output
   }
 
-  def timedFuture[T, K](name:String)(op:(T)=>Future[K]):(T)=>Future[K] = (input:T) => {
+  def timedFuture[T, K](name:String)(op:(T)=>Future[K])(implicit ec:ExecutionContext):(T)=>Future[K] = (input:T) => {
     val start= System.nanoTime()
     val promise = Promise[K]()
 

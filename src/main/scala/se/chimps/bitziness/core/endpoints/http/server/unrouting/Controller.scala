@@ -3,8 +3,7 @@ package se.chimps.bitziness.core.endpoints.http.server.unrouting
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.stream.Materializer
 
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.matching.Regex
 
 /**
@@ -39,11 +38,11 @@ object Action {
     override def apply(req:UnroutingRequest):Future[HttpResponse] = func()
   }
 
-  def sync(func:(UnroutingRequest)=>HttpResponse):Action = new Action {
+  def sync(func:(UnroutingRequest)=>HttpResponse)(implicit ec:ExecutionContext):Action = new Action {
     override def apply(req:UnroutingRequest):Future[HttpResponse] = Future(func(req))
   }
 
-  def sync(func:() => HttpResponse):Action = new Action {
+  def sync(func:() => HttpResponse)(implicit ec:ExecutionContext):Action = new Action {
     override def apply(req:UnroutingRequest):Future[HttpResponse] = Future(func())
   }
 }
@@ -53,6 +52,7 @@ trait Action extends (UnroutingRequest => Future[HttpResponse]) {
 }
 
 case class ActionDefinition(method:String, pathRegex:Regex, action:Action, paramNames:List[String])
-case class UnroutingRequest(raw:HttpRequest, params:Map[String, String], mat: Materializer) extends SugarCoating {
+case class UnroutingRequest(raw:HttpRequest, params:Map[String, String], mat: Materializer, ec:ExecutionContext) extends SugarCoating {
   implicit val materializer = mat
+  implicit val executor = ec
 }

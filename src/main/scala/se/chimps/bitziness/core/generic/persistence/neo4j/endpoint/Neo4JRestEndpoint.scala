@@ -10,12 +10,12 @@ import org.json4s.native.Serialization._
 import se.chimps.bitziness.core.endpoints.http.HttpClientEndpoint
 import se.chimps.bitziness.core.endpoints.http.client.RequestBuilders
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 trait Neo4JRestEndpoint extends HttpClientEndpoint with RequestBuilders with NodeOperations with RelationOperations with DegreeOperations with UserOperation with AlgorithmOperation {
 
   implicit val formats = DefaultFormats
+  implicit def ec:ExecutionContext
 
   def username:Option[String] = None
   def password:String

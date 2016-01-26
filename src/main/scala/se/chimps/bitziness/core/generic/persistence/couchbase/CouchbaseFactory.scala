@@ -5,8 +5,7 @@ import com.couchbase.client.java.{Bucket, CouchbaseCluster}
 import com.couchbase.client.java.cluster.ClusterManager
 import se.chimps.bitziness.core.generic.Configs
 import collection.JavaConverters._
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{ExecutionContext, Future}
 
 trait CouchbaseFactory extends Configs {
 
@@ -21,12 +20,12 @@ trait CouchbaseFactory extends Configs {
     op(cm)
   }
 
-  def withBucket[T](name:String, password:String)(op:(Bucket)=>T):Future[T] = Future {
+  def withBucket[T](name:String, password:String)(op:(Bucket)=>T)(implicit ec:ExecutionContext):Future[T] = Future {
     val bucket = couchbase.openBucket(name, password)
     op(bucket)
   }
 
-  def withBucket[T](name:String)(op:(Bucket)=>T):Future[T] = Future {
+  def withBucket[T](name:String)(op:(Bucket)=>T)(implicit ec:ExecutionContext):Future[T] = Future {
     val bucket = couchbase.openBucket(name)
     op(bucket)
   }

@@ -12,7 +12,7 @@ import org.scalatest.concurrent.ScalaFutures
 import se.chimps.bitziness.core.endpoints.http.client.RequestBuilders
 import se.chimps.bitziness.core.endpoints.http.server.unrouting._
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext.Implicits
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
@@ -22,6 +22,7 @@ import scala.concurrent.{Await, Future}
 class HttpServerEndpointTest extends FunSuite with Unrouting with RequestBuilders with ScalaFutures {
 
   implicit val materializer = ActorMaterializer()(ActorSystem("akka-http-server"))
+  implicit val ec = Implicits.global
 
   registerController(new MyController)
 
@@ -67,6 +68,8 @@ class HttpServerEndpointTest extends FunSuite with Unrouting with RequestBuilder
 }
 
 class MyController extends Controller with ResponseBuilders {
+  import Implicits.global
+
   get("/param/:param1", Action.sync((req:UnroutingRequest) => {
     Ok().withEntity(HttpEntity(req.param("param1").getOrElse("nope")))
   }))
