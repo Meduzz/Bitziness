@@ -12,11 +12,11 @@ class InfluxDbMetricsService(val settings:InfluxSettings, override val host:Stri
   var influxdb:ActorRef = _
 
   override def metric(host:String, service: String, name: String, metric: Long, state: Option[String], metadata: Map[String, String]): Unit = {
-    influxdb ! s"$name,host=$host,service=$service${convert(state)}${meta(metadata)} value=${metric}i"
+    influxdb ! s"${escape(name)},host=${escape(host)},service=${escape(service)}${convert(state)}${meta(metadata)} value=${metric}i"
   }
 
   override def metric(host:String, service: String, name: String, metric: BigDecimal, state: Option[String], metadata: Map[String, String]): Unit = {
-    influxdb ! s"$name,host=$host,service=$service${convert(state)}${meta(metadata)} value=${metric.toString()}"
+    influxdb ! s"${escape(name)},host=${escape(host)},service=${escape(service)}${convert(state)}${meta(metadata)} value=${metric.toString()}"
   }
 
   override def metric(host:String, service: String, name: String, metric: Boolean, state: Option[String], metadata: Map[String, String]): Unit = {
@@ -25,11 +25,11 @@ class InfluxDbMetricsService(val settings:InfluxSettings, override val host:Stri
       case _ => "f"
     }
 
-    influxdb ! s"$name,host=$host,service=$service${convert(state)}${meta(metadata)} value=${value}"
+    influxdb ! s"${escape(name)},host=${escape(host)},service=${escape(service)}${convert(state)}${meta(metadata)} value=$value"
   }
 
   override def metric(host:String, service: String, name: String, metric: String, state: Option[String], metadata: Map[String, String]): Unit = {
-    influxdb ! s"""$name,host=$host,service=$service${convert(state)}${meta(metadata)} value=\"${metric}\""""
+    influxdb ! s"""${escape(name)},host=${escape(host)},service=${escape(service)}${convert(state)}${meta(metadata)} value=\"${metric}\""""
   }
 
   override def initialize(): Unit = {
@@ -39,7 +39,7 @@ class InfluxDbMetricsService(val settings:InfluxSettings, override val host:Stri
   }
 
   def meta(metadata:Map[String, String]):String = {
-    val meta = metadata.map(m => s"${m._1}=${m._2}").mkString(",")
+    val meta = metadata.map(m => s"${m._1}=${escape(m._2)}").mkString(",")
 
     if (meta.length > 0) {
       s",$meta"
@@ -49,8 +49,10 @@ class InfluxDbMetricsService(val settings:InfluxSettings, override val host:Stri
   }
 
   def convert(state:Option[String]):String = {
-    state.map(s => s",state=$s").getOrElse("")
+    state.map(s => s",state=${escape(s)}").getOrElse("")
   }
+
+  def escape(str:String):String = str.replace(" ", "\\ ")
 }
 
 case class InfluxSettings(host:String, port:Int, db:String, username:Option[String], password:Option[String], secure:Boolean = false, buffer:Int = 100)
