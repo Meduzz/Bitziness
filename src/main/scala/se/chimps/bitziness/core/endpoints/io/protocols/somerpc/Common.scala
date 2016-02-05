@@ -103,7 +103,7 @@ object Common {
   }
 
   trait RpcHelpers extends ByteStringHelpers with PromiseStore with PipeToSupport { self:ConnectionBase =>
-    implicit val ec = context.dispatcher
+    import context.dispatcher
     def service:ActorRef
     val encoder:Option[PartialFunction[ByteString, ByteString]] = None
     val decoder:Option[PartialFunction[ByteString, ByteString]] = None
@@ -148,7 +148,7 @@ object Common {
 
     override def onCommandFailed(cmd: CommandFailed): Unit = {
       val msg = cmd.cmd match {
-        case w:Write => "An attemtp to write data failed."
+        case w:Write => "An attempt to write data failed."
         case f:WriteFile => "An attempt to write a file failed."
       }
 

@@ -46,7 +46,7 @@ class PingService extends Service with Log {
 class PingEndpoint(val service:ActorRef) extends HttpServerEndpoint with Log {
   implicit val timeout = Timeout(3l, TimeUnit.SECONDS)
   implicit val materializer = ActorMaterializer()(context)
-  implicit val ec = context.dispatcher
+  import context.dispatcher
 
   override def createServer(builder:HttpServerBuilder):Future[ActorRef] = {
     info("Setting up the PingEndpoint.")
@@ -81,11 +81,11 @@ class PingController(val endpoint:ActorRef) extends Controller with ResponseBuil
   implicit val timeout = Timeout(3l, TimeUnit.SECONDS)
 
   get("/", Action.sync { req =>
-    Ok().withView(Scalate("/templates/hello.jade", Map("title"->"Hello world!")))
+    Ok().withView(Jade4j.classpath("templates/hello.jade", Map("title"->"Hello world!")))
   })
   get("/ping", Action { req =>
     val pong = (endpoint ? "ping").mapTo[String]
-    pong.map(resp => Ok().withView(Scalate("/templates/ping.jade", Map("pong" -> resp))))
+    pong.map(resp => Ok().withView(Jade4j.classpath("templates/ping.jade", Map("pong" -> resp))))
   })
   get("/hello/:world", Action.sync { req =>
     Ok().withView(Jade4j.classpath("templates/world.jade", Map("world" -> req.params.getOrElse("world", "failed"))))
@@ -94,7 +94,7 @@ class PingController(val endpoint:ActorRef) extends Controller with ResponseBuil
     val Seq(key, value, view, delete) = req.param("key", "value", "view", "delete")
     val cookie = req.cookie(view.getOrElse(""))
 
-    var resp = Ok().withView(Scalate("/templates/cookie.jade", Map("cookie" -> cookie.getOrElse(""), "key" -> view.getOrElse(""), "title" -> "Cookies")))
+    var resp = Ok().withView(Jade4j.classpath("templates/cookie.jade", Map("cookie" -> cookie.getOrElse(""), "key" -> view.getOrElse(""), "title" -> "Cookies")))
 
     if (key.isDefined && value.isDefined) {
       resp = resp.withHeaders(SetCookie.create(HttpCookie(key.get, value.get)))
