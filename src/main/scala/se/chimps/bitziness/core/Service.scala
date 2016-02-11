@@ -6,7 +6,7 @@ import se.chimps.bitziness.core.services.healthcheck.HealthChecks
 
 import scala.reflect.ClassTag
 
-abstract class Service extends Actor with HasFeature with ReceiveChain with ErrorMapping {
+abstract class Service extends Actor with HasFeature with ReceiveChain {
   def handle:Receive
 
   private def init:Receive = {

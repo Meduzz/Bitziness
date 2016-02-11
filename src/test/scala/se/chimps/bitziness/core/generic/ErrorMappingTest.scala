@@ -13,6 +13,8 @@ class ErrorMappingTest extends FunSuite {
   }
 }
 
-class ErrorMapper extends ErrorMapping {
-
+class ErrorMapper extends ErrorMapping[Any] {
+  override def errorMapping:PartialFunction[Throwable, Any] = {
+    case e:Throwable => e
+  }
 }

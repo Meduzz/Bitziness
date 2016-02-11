@@ -1,6 +1,5 @@
-package se.chimps.bitziness.core.endpoints.graphlib
+package se.chimps.bitziness.core.generic.persistence.redis.endpoint
 
-import se.chimps.bitziness.core.generic.persistence.redis.endpoint.RedisEndpoint
 import se.kodiak.tools.graphs.Graph
 import se.kodiak.tools.graphs.graphsources.RedisGraphSource
 

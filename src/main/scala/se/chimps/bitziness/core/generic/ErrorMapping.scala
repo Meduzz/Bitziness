@@ -1,11 +1,8 @@
 package se.chimps.bitziness.core.generic
 
 /**
- * A trait that gives you a method to put all your error mapping.
- * Defautls to no mapping.
+ * Something to point your rescue at.
  */
-trait ErrorMapping {
-  def errorMapping:PartialFunction[Throwable, Any] = {
-    case e:Throwable => e
-  }
+trait ErrorMapping[T] {
+  def errorMapping:PartialFunction[Throwable, T]
 }
