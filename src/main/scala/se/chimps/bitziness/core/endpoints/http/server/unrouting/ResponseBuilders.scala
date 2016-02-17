@@ -14,6 +14,8 @@ trait ResponseBuilders {
   def Error():HttpResponse = HttpResponse(StatusCodes.InternalServerError)
   def TODO():HttpResponse = HttpResponse(StatusCodes.NotImplemented)
   def Forbidden():HttpResponse = HttpResponse(StatusCodes.Forbidden)
+  def BadRequest():HttpResponse = HttpResponse(StatusCodes.BadRequest)
+  def NoContent():HttpResponse = HttpResponse(StatusCodes.NoContent)
 
   implicit def viewImplicit(response:HttpResponse):ViewExplicitImplicit = new ViewExplicitImplicit(response)
 }

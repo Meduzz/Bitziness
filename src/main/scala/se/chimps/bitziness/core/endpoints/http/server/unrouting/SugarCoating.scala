@@ -8,6 +8,7 @@ import akka.http.scaladsl.model.{ContentType, HttpRequest}
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import akka.util.ByteString
+import se.chimps.bitziness.core.generic.Codecs.Decoder
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.Duration
@@ -38,39 +39,39 @@ trait SugarCoating {
 
       for {
         strict <- raw.entity.toStrict(duration)
-        content <- decoder.decode(strict.contentType)(strict.data)
+        content <- Future(decoder.decode(strict.data))
         query <- Future(Query(content, strict.contentType.charset().nioCharset))
       } yield query.toMap
     } else {
       for {
         bytes <- raw.entity.dataBytes.runWith(Sink.head)
-        content <- decoder.decode(raw.entity.contentType())(bytes)
+        content <- Future(decoder.decode(bytes))
         query <- Future(Query(content, raw.entity.contentType().charset().nioCharset))
       } yield query.toMap
     }
   }
 
-  def asEntity[T](decoder:Decoder[T]):Future[T] = {
+  def asEntity[T](decoder:Decoder[ByteString, T]):Future[T] = {
     if (raw.entity.isChunked()) {
       val duration = Duration(2L, TimeUnit.SECONDS)
 
       for {
         strict <- raw.entity.toStrict(duration)
-        content <- decoder.decode(strict.contentType)(strict.data)
+        content <- Future(decoder.decode(strict.data))
       } yield content
     } else {
       for {
         bytes <- raw.entity.dataBytes.runWith(Sink.head)
-        content <- decoder.decode(raw.entity.contentType())(bytes)
+        content <- Future(decoder.decode(bytes))
       } yield content
     }
   }
 
-  def asEntityStream[T](decoder: Decoder[T]):Future[Seq[T]] = {
+  def asEntityStream[T](decoder: Decoder[ByteString, T]):Future[Seq[T]] = {
     raw.entity match {
-      case c:Chunked => c.chunks.runWith(Sink.fold[Seq[Future[T]], ChunkStreamPart](Seq())((seq, data) => seq ++ Seq(decoder.decode(c.contentType)(data.data())))).map(Future.sequence(_)).flatMap(s => s)
-      case s:Strict => decoder.decode(s.contentType)(s.data).map(Seq(_))
-      case d:Default => d.data.runWith(Sink.fold[Seq[Future[T]], ByteString](Seq())((seq, data) => seq ++ Seq(decoder.decode(d.contentType)(data)))).map(Future.sequence(_)).flatMap(s => s)
+      case c:Chunked => c.chunks.runWith(Sink.fold[Seq[T], ChunkStreamPart](Seq())((seq, data) => seq ++ Seq(decoder.decode(data.data()))))
+      case s:Strict => Future(Seq(decoder.decode(s.data)))
+      case d:Default => d.data.runWith(Sink.fold[Seq[T], ByteString](Seq())((seq, data) => seq ++ Seq(decoder.decode(data))))
     }
   }
 
@@ -78,10 +79,6 @@ trait SugarCoating {
   def isChunked:Boolean = raw.entity.isChunked()
 }
 
-trait Decoder[T] {
-  def decode(contentType: ContentType)(data:ByteString)(implicit ec:ExecutionContext):Future[T]
-}
-
-class StringDecoder extends Decoder[String] {
-  override def decode(contentType:ContentType)(data:ByteString)(implicit ec:ExecutionContext):Future[String] = Future(data.decodeString(contentType.charset().value)).mapTo[String]
+class StringDecoder extends Decoder[ByteString, String] {
+  override def decode(in:ByteString):String = in.utf8String
 }
