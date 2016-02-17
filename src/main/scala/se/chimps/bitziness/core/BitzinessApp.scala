@@ -1,7 +1,7 @@
 package se.chimps.bitziness.core
 
 import akka.actor.{Props, ActorRef, ActorSystem}
-import se.chimps.bitziness.core.generic.{Naming, ActorFactory, Init}
+import se.chimps.bitziness.core.generic.{ActorFactory, Init}
 import se.chimps.bitziness.core.services.healthcheck.HealthChecks
 
 import scala.reflect.ClassTag

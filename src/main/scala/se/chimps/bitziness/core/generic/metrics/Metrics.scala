@@ -1,26 +1,28 @@
 package se.chimps.bitziness.core.generic.metrics
 
 import akka.actor.Actor
-import se.chimps.bitziness.core.generic.{Naming, Event, Events}
+import se.chimps.bitziness.core.generic.{Event, Events}
 
 import scala.concurrent.{ExecutionContext, Promise, Future}
 
-trait Metrics extends Events { myself:Actor with Naming =>
+trait Metrics extends Events { myself:Actor =>
+
+  def senderName:String
 
   def longMetric(metricName:String, metric:Long, state:Option[String] = None, metadata:Map[String, String] = Map()) = {
-    publish(LongMetric(metric, name(), metricName, state, metadata))
+    publish(LongMetric(metric, senderName, metricName, state, metadata))
   }
 
   def decimalMetric(metricName:String, metric:BigDecimal, state:Option[String] = None, metadata:Map[String, String] = Map()) = {
-    publish(DecimalMetric(metric, name(), metricName, state, metadata))
+    publish(DecimalMetric(metric, senderName, metricName, state, metadata))
   }
 
   def booleanMetric(metricName:String, metric:Boolean, state:Option[String] = None, metadata:Map[String, String] = Map()) = {
-    publish(BooleanMetric(metric, name(), metricName, state, metadata))
+    publish(BooleanMetric(metric, senderName, metricName, state, metadata))
   }
 
   def stringMetric(metricName:String, metric:String, state:Option[String] = None, metadata:Map[String, String] = Map()) = {
-    publish(StringMetric(metric, name(), metricName, state, metadata))
+    publish(StringMetric(metric, senderName, metricName, state, metadata))
   }
 
   def timed[T, K](name:String)(op:(T)=>K):(T)=>K = (input:T) => {

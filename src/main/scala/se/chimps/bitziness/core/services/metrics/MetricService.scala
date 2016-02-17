@@ -1,6 +1,5 @@
 package se.chimps.bitziness.core.services.metrics
 
-import akka.actor.PoisonPill
 import se.chimps.bitziness.core.Service
 import se.chimps.bitziness.core.generic.Events
 import se.chimps.bitziness.core.generic.metrics._
