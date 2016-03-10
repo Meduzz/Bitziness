@@ -8,6 +8,9 @@ trait ActionRegistry {
   private[unrouting] var actions:Map[String, List[ActionDefinition]] = Map()
 
   def registerController(controller:Controller):Unit = {
-    actions = actions ++ controller.definitions.groupBy(_.method)
+    controller.definitions.groupBy(_.method).foreach(kv => {
+      val (method, acts) = kv
+      actions = actions ++ Map(method -> (actions.getOrElse(method, List()) ++ acts))
+    })
   }
 }

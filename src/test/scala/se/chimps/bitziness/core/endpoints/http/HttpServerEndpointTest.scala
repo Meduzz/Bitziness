@@ -25,6 +25,7 @@ class HttpServerEndpointTest extends FunSuite with Unrouting with RequestBuilder
   implicit val ec = Implicits.global
 
   registerController(new MyController)
+  registerController(new MyOtherController)
 
   private val chunks = List("we", "like", "chunks").map(ChunkStreamPart(_))
 
@@ -92,6 +93,11 @@ class MyController extends Controller with ResponseBuilders {
       Ok().withEntity(s"Your name is ${data("name")} ${data("surname")}.")
     }
   })
+}
+
+class MyOtherController extends Controller with ResponseBuilders {
+  import Implicits.global
+
   put("/chunks", Action { req =>
     req.asEntityStream(new StringDecoder()).map(chunks => {
       import scala.collection.immutable.Seq
