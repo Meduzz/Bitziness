@@ -1,4 +1,4 @@
-package se.chimps.bitziness.core.endpoints.rest.spray.unrouting.view
+package se.chimps.bitziness.core.generic.view
 
 import org.fusesource.scalate._
 import se.chimps.bitziness.core.generic.View
