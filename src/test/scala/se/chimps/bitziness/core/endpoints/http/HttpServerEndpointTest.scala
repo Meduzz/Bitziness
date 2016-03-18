@@ -68,7 +68,7 @@ class HttpServerEndpointTest extends FunSuite with Unrouting with RequestBuilder
   }
 }
 
-class MyController extends Controller with ResponseBuilders {
+class MyController extends Controller with ResponseBuilders with Validation {
   import Implicits.global
 
   get("/param/:param1", Action.sync((req:UnroutingRequest) => {
@@ -90,7 +90,18 @@ class MyController extends Controller with ResponseBuilders {
   }, Map("rest" -> "([a-z\\.]+)"))
   post("/form", Action { req =>
     req.asFormData().map { data =>
-      Ok().withEntity(s"Your name is ${data("name")} ${data("surname")}.")
+      val nameField = validate[String](data("name"), str => str.lengthBetween(4, 10) && str.notNull)
+      val surnameField = validate[String](data("surname"), str => str.lengthBetween(0, 3) && str.notNull)
+
+      val textField = for {
+        name <- nameField
+        surname <- surnameField
+      } yield s"Your name is ${data("name")} ${data("surname")}."
+
+      textField match {
+        case Valid(text) => Ok().withEntity(text)
+        case Invalid(text) => Error().withEntity("A field did not validate.")
+      }
     }
   })
 }

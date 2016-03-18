@@ -11,10 +11,10 @@ import akka.util.{ByteString, Timeout}
 import se.chimps.bitziness.core.endpoints.http.client.RequestBuilders
 import se.chimps.bitziness.core.endpoints.http.server.unrouting.{ResponseBuilders, Action, Controller}
 import se.chimps.bitziness.core.endpoints.http.{ConnectionBuilder, HttpClientEndpoint, HttpServerBuilder, HttpServerEndpoint}
-import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.view.{Jade4j, Scalate}
 import se.chimps.bitziness.core.Service
 import akka.pattern._
 import se.chimps.bitziness.core.generic.logging.Log
+import se.chimps.bitziness.core.generic.view.Jade4j
 import scala.concurrent.ExecutionContext.global
 import scala.concurrent.Future
 
@@ -127,6 +127,7 @@ class PingController(val endpoint:ActorRef) extends Controller with ResponseBuil
 
 /**
  * Fetches health checks from the /admin/health endpoint.
+ *
  * @param service
  */
 class HealthcheckEndpoint(val service:ActorRef) extends HttpClientEndpoint with RequestBuilders with Log {

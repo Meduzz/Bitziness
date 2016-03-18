@@ -4,7 +4,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.http.scaladsl.model.HttpEntity._
 import akka.http.scaladsl.model.Uri.Query
-import akka.http.scaladsl.model.{ContentType, HttpRequest}
+import akka.http.scaladsl.model.{HttpEntity, ContentType, HttpRequest}
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import akka.util.ByteString
@@ -34,34 +34,27 @@ trait SugarCoating {
   def asFormData():Future[Map[String, String]] = {
     val decoder = new StringDecoder()
 
-    if (raw.entity.isChunked()) {
-      val duration = Duration(2L, TimeUnit.SECONDS)
-
-      for {
-        strict <- raw.entity.toStrict(duration)
-        content <- Future(decoder.decode(strict.data))
-        query <- Future(Query(content, strict.contentType.charset().nioCharset))
-      } yield query.toMap
-    } else {
-      for {
-        bytes <- raw.entity.dataBytes.runWith(Sink.head)
-        content <- Future(decoder.decode(bytes))
-        query <- Future(Query(content, raw.entity.contentType().charset().nioCharset))
-      } yield query.toMap
-    }
+    for {
+      content <- dechunk[String](raw.entity, decoder)
+      query <- Future(Query(content, raw.entity.contentType.charset().nioCharset))
+    } yield query.toMap
   }
 
   def asEntity[T](decoder:Decoder[ByteString, T]):Future[T] = {
-    if (raw.entity.isChunked()) {
+    dechunk(raw.entity, decoder)
+  }
+
+  protected def dechunk[T](entity:HttpEntity, decoder:Decoder[ByteString, T]):Future[T] = {
+    if (entity.isChunked()) {
       val duration = Duration(2L, TimeUnit.SECONDS)
 
       for {
-        strict <- raw.entity.toStrict(duration)
+        strict <- entity.toStrict(duration)
         content <- Future(decoder.decode(strict.data))
       } yield content
     } else {
       for {
-        bytes <- raw.entity.dataBytes.runWith(Sink.head)
+        bytes <- entity.dataBytes.runWith(Sink.head)
         content <- Future(decoder.decode(bytes))
       } yield content
     }
