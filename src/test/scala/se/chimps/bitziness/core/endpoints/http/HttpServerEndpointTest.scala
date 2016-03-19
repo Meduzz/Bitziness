@@ -90,8 +90,8 @@ class MyController extends Controller with ResponseBuilders with Validation {
   }, Map("rest" -> "([a-z\\.]+)"))
   post("/form", Action { req =>
     req.asFormData().map { data =>
-      val nameField = validate[String](data("name"), str => str.lengthBetween(4, 10) && str.notNull)
-      val surnameField = validate[String](data("surname"), str => str.lengthBetween(0, 3) && str.notNull)
+      val nameField = validate[String](data("name"), str => if (str.lengthBetween(4, 10) && str.notNull) { None } else { Some("Name is null, or not between 4-10 chars.") })
+      val surnameField = validate[String](data("surname"), str => if (str.lengthBetween(0, 3) && str.notNull) { None } else { Some("Surname is null or not between 0-3 chars.") })
 
       val textField = for {
         name <- nameField
@@ -100,7 +100,7 @@ class MyController extends Controller with ResponseBuilders with Validation {
 
       textField match {
         case Valid(text) => Ok().withEntity(text)
-        case Invalid(text) => Error().withEntity("A field did not validate.")
+        case Invalid(text, msg) => Error().withEntity(msg)
       }
     }
   })

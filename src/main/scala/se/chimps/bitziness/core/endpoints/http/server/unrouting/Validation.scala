@@ -2,7 +2,7 @@ package se.chimps.bitziness.core.endpoints.http.server.unrouting
 
 trait Validation {
 
-  def validate[T](data:T, func:(T)=>Boolean):Field[T] = Field(data).validate(func)
+  def validate[T](data:T, func:(T)=>Option[String]):Field[T] = Field(data).validate(func)
 
   implicit def enhanceMap(map:Map[String, String]):MapConverters = new MapConverters(map)
 
@@ -66,7 +66,7 @@ object Field {
 }
 
 trait Field[T] {
-  def validate(func:(T)=>Boolean):Field[T]
+  def validate(func:(T)=>Option[String]):Field[T]
   def map[K](f:(T)=>K):Field[K]
   def flatMap[K](f:(T)=>Field[K]):Field[K]
   def filter(f:(T)=>Boolean):Field[T]
@@ -76,11 +76,12 @@ trait Field[T] {
 }
 
 case class Valid[T](data:T) extends Field[T] {
-  override def validate(func:(T)=>Boolean):Field[T] = {
-    if (func(data)) {
+  override def validate(func:(T)=>Option[String]):Field[T] = {
+    val pred = func(data)
+    if (pred.isEmpty) {
       Valid(data)
     } else {
-      Invalid(data)
+      Invalid(data, pred.get)
     }
   }
 
@@ -94,17 +95,17 @@ case class Valid[T](data:T) extends Field[T] {
     if (f(data)) {
       Valid(data)
     } else {
-      Invalid(data)
+      Invalid(data, "")
     }
   }
 }
 
-case class Invalid[T](data:T) extends Field[T] {
-  override def validate(func:(T) => Boolean):Field[T] = this
+case class Invalid[T](data:T, msg:String) extends Field[T] {
+  override def validate(func:(T) => Option[String]):Field[T] = this
 
-  override def map[K](f:(T) => K):Field[K] = Invalid(f(data))
+  override def map[K](f:(T) => K):Field[K] = Invalid(f(data), msg)
 
-  override def flatMap[K](f:(T) => Field[K]):Field[K] = Invalid(f(data).data)
+  override def flatMap[K](f:(T) => Field[K]):Field[K] = Invalid(f(data).data, msg)
 
   override def forEach(f:(T) => Unit):Unit = f(data)
 
