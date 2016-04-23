@@ -1,5 +1,6 @@
 package se.chimps.bitziness.core.endpoints.http
 
+import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
@@ -33,7 +34,7 @@ abstract class AbstractHttpServerBinder(host:String, port:Int) extends Actor {
   implicit val materializer = ActorMaterializer()
 
   val serverSource = Http().bind(host, port)
-  def requestHandler:(HttpRequest) => Future[HttpResponse]
+  def requestHandler(remote:InetSocketAddress):(HttpRequest) => Future[HttpResponse]
 }
 
 class Routed(val host:String, val port:Int) extends AbstractHttpServerBinder(host, port) with Unrouting with ActorLogging {
@@ -48,7 +49,7 @@ class Routed(val host:String, val port:Int) extends AbstractHttpServerBinder(hos
   override def preStart():Unit = {
     super.preStart()
     serverSource.to(Sink.foreach(conn => {
-      conn.handleWithAsyncHandler(requestHandler)
+      conn.handleWithAsyncHandler(requestHandler(conn.remoteAddress))
     })).run()
   }
 }

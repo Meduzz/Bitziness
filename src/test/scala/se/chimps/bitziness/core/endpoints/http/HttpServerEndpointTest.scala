@@ -1,5 +1,6 @@
 package se.chimps.bitziness.core.endpoints.http
 
+import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
@@ -30,14 +31,15 @@ class HttpServerEndpointTest extends FunSuite with Unrouting with RequestBuilder
   private val chunks = List("we", "like", "chunks").map(ChunkStreamPart(_))
 
   test("controllers, actions and responses") {
-    expectResponse(200, Seq("spam"))(handleRequest(request("GET", "/param/spam")))
-    expectResponse(200, Seq("Hello a and b!"))(handleRequest(request("GET", "/extract/a/and/b")))
-    expectResponse(404, Seq())(handleRequest(request("GET", "/PARAM/CAPSLOCK")))
-    expectResponse(500, Seq())(handleRequest(request("GET", "/crash")))
-    expectResponse(200, Seq("file.html"))(handleRequest(request("GET", "/static/file.html")))
-    expectResponse(200, Seq("some.kind.of.key"))(handleRequest(request("GET", "/key/some.kind.of.key")))
-    expectResponse(200, Seq("Your name is John Doe."))(handleRequest(request("POST", "/form").withEntity("surname=Doe&name=John")))
-    expectResponse(200, Seq("ew", "ekil", "sknuhc"))(handleRequest(request("PUT", "/chunks").withEntity(Chunked(ContentTypes.`text/plain`, Source(chunks))))) // chunks needs to be of scala.collection.immutable apparently.
+    expectResponse(200, Seq("spam"))(handleRequest(new InetSocketAddress(12345), request("GET", "/param/spam")))
+    expectResponse(200, Seq("Hello a and b!"))(handleRequest(new InetSocketAddress(12345), request("GET", "/extract/a/and/b")))
+    expectResponse(404, Seq())(handleRequest(new InetSocketAddress(12345), request("GET", "/PARAM/CAPSLOCK")))
+    expectResponse(500, Seq())(handleRequest(new InetSocketAddress(12345), request("GET", "/crash")))
+    expectResponse(200, Seq("file.html"))(handleRequest(new InetSocketAddress(12345), request("GET", "/static/file.html")))
+    expectResponse(200, Seq("some.kind.of.key"))(handleRequest(new InetSocketAddress(12345), request("GET", "/key/some.kind.of.key")))
+    expectResponse(200, Seq("Your name is John Doe."))(handleRequest(new InetSocketAddress(12345), request("POST", "/form").withEntity("surname=Doe&name=John")))
+    expectResponse(200, Seq("ew", "ekil", "sknuhc"))(handleRequest(new InetSocketAddress(12345), request("PUT", "/chunks").withEntity(Chunked(ContentTypes.`text/plain`, Source(chunks))))) // chunks needs to be of scala.collection.immutable apparently.
+    expectResponse(200, Seq("54321"))(handleRequest(new InetSocketAddress(54321), request("GET", "/ip")))
   }
 
   def expectResponse(status:Int, body:Seq[String], headers:Seq[HttpHeader] = Seq())(futureResponse:Future[HttpResponse]): Unit = {
@@ -116,4 +118,9 @@ class MyOtherController extends Controller with ResponseBuilders {
       Ok().withEntity(Chunked(ContentTypes.`text/plain`, Source(bits)))
     })
   })
+	get("/ip", Action.sync { req =>
+		val port = req.inet.getPort
+
+		Ok().withEntity(port.toString)
+	})
 }

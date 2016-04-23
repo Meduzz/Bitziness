@@ -1,5 +1,7 @@
 package se.chimps.bitziness.core.endpoints.http.server.unrouting
 
+import java.net.InetSocketAddress
+
 import akka.http.scaladsl.model.{HttpResponse, HttpRequest}
 import akka.stream.Materializer
 
@@ -12,11 +14,11 @@ trait Engine {
 
   private[unrouting] def actions:Map[String, List[ActionDefinition]]
 
-  def handleRequest(request:HttpRequest)(implicit materializer: Materializer, ec:ExecutionContext):Future[HttpResponse] = {
+  def handleRequest(inet:InetSocketAddress, request:HttpRequest)(implicit materializer: Materializer, ec:ExecutionContext):Future[HttpResponse] = {
 
     val response = for {
       candidate <- findCandidate(method(request), url(request))
-      actionResp <- executeAction(url(request), request, candidate)
+      actionResp <- executeAction(url(request), inet, request, candidate)
     } yield actionResp
 
     // TODO drain entities and what not...
@@ -43,7 +45,7 @@ trait Engine {
     }
   }
 
-  private def executeAction(url:String, request:HttpRequest, action:ActionDefinition)(implicit materializer: Materializer, ec:ExecutionContext):Future[HttpResponse] = {
+  private def executeAction(url:String, inet:InetSocketAddress, request:HttpRequest, action:ActionDefinition)(implicit materializer: Materializer, ec:ExecutionContext):Future[HttpResponse] = {
     val matcher = action.pathRegex.pattern.matcher(url)
     val pathParams:Map[String, String] = if (matcher.matches()) {
       val groups = (0 to matcher.groupCount()).map(b => matcher.group(b))
@@ -52,7 +54,7 @@ trait Engine {
       Map()
     }
 
-    action.action(UnroutingRequest(request, request.uri.query.toMap ++ pathParams, materializer, ec))
+    action.action(UnroutingRequest(inet, request, request.uri.query.toMap ++ pathParams, materializer, ec))
   }
 
   private def method(request: HttpRequest):String = {

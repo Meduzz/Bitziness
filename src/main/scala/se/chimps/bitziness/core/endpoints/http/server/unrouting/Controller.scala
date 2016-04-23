@@ -1,5 +1,7 @@
 package se.chimps.bitziness.core.endpoints.http.server.unrouting
 
+import java.net.InetSocketAddress
+
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.stream.Materializer
 
@@ -52,7 +54,7 @@ trait Action extends (UnroutingRequest => Future[HttpResponse]) {
 }
 
 case class ActionDefinition(method:String, pathRegex:Regex, action:Action, paramNames:List[String])
-case class UnroutingRequest(raw:HttpRequest, params:Map[String, String], mat: Materializer, ec:ExecutionContext) extends SugarCoating {
+case class UnroutingRequest(inet:InetSocketAddress, raw:HttpRequest, params:Map[String, String], mat: Materializer, ec:ExecutionContext) extends SugarCoating {
   implicit val materializer = mat
   implicit val executor = ec
 }

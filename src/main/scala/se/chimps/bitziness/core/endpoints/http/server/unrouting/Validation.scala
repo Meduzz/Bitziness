@@ -70,7 +70,7 @@ trait Field[T] {
   def map[K](f:(T)=>K):Field[K]
   def flatMap[K](f:(T)=>Field[K]):Field[K]
   def filter(f:(T)=>Boolean):Field[T]
-  def forEach(f:(T)=>Unit):Unit
+  def foreach(f:(T)=>Unit):Unit
 
   private[unrouting] def data:T
 }
@@ -89,7 +89,7 @@ case class Valid[T](data:T) extends Field[T] {
 
   override def flatMap[K](f:(T) => Field[K]):Field[K] = f(data)
 
-  override def forEach(f:(T) => Unit):Unit = map(f)
+  override def foreach(f:(T) => Unit):Unit = map(f)
 
   override def filter(f:(T) => Boolean):Field[T] = {
     if (f(data)) {
@@ -107,7 +107,7 @@ case class Invalid[T](data:T, msg:String) extends Field[T] {
 
   override def flatMap[K](f:(T) => Field[K]):Field[K] = Invalid(f(data).data, msg)
 
-  override def forEach(f:(T) => Unit):Unit = f(data)
+  override def foreach(f:(T) => Unit):Unit = f(data)
 
   override def filter(f:(T) => Boolean):Field[T] = this
 }

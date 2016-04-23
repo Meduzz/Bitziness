@@ -1,17 +1,18 @@
 package se.chimps.bitziness.core.endpoints.http.server.unrouting
 
+import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
 
 import akka.http.scaladsl.model.HttpEntity._
 import akka.http.scaladsl.model.Uri.Query
-import akka.http.scaladsl.model.{HttpEntity, ContentType, HttpRequest}
+import akka.http.scaladsl.model.{HttpEntity, HttpRequest}
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import akka.util.ByteString
 import se.chimps.bitziness.core.generic.Codecs.Decoder
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.Duration
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
  *
@@ -19,6 +20,7 @@ import scala.concurrent.duration.Duration
 // TODO these asX methods will prolly fail on a second request.
 // TODO move durations to implicits.
 trait SugarCoating {
+  def inet:InetSocketAddress
   def raw:HttpRequest
   def params:Map[String, String]
   implicit def materializer:Materializer
