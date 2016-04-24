@@ -16,7 +16,7 @@ trait ResponseBuilders {
   def Forbidden():HttpResponse = HttpResponse(StatusCodes.Forbidden)
   def BadRequest():HttpResponse = HttpResponse(StatusCodes.BadRequest)
   def NoContent():HttpResponse = HttpResponse(StatusCodes.NoContent)
-  def Moved():HttpResponse = HttpResponse(StatusCodes.TemporaryRedirect)
+  def Moved():HttpResponse = HttpResponse(StatusCodes.custom(301, "Moved"))
 
   implicit def viewImplicit(response:HttpResponse):ViewExplicitImplicit = new ViewExplicitImplicit(response)
 }
