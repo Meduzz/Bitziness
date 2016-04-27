@@ -41,7 +41,7 @@ object ActivateEndpointSandbox extends App {
   }
   Await.result(f, Duration(3l, TimeUnit.SECONDS))
 
-  system.shutdown()
+  system.terminate()
 
   class PersonMigration extends Migration {
     override def timestamp: Long = 1L

@@ -1,9 +1,7 @@
 package se.chimps.bitziness.core.generic
 
 import akka.actor.ActorSystem
-import org.json4s.{ShortTypeHints, DefaultFormats}
-import org.json4s.native.Serialization
-import org.scalatest.{BeforeAndAfterAll,FunSuite}
+import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import se.chimps.bitziness.core.generic.Serializers.{JSONSerializer, ObjectSerializer}
 
 /**
@@ -70,7 +68,7 @@ class SerializersTest extends FunSuite with BeforeAndAfterAll {
 class Serializer extends ObjectSerializer with JSONSerializer {
   protected val system = ActorSystem()
 
-  def shutdown() = system.shutdown()
+  def shutdown() = system.terminate()
 }
 
 case class Simple(name:String)

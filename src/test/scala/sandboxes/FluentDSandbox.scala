@@ -32,5 +32,5 @@ object FluentDSandbox extends App {
   val g = Future(Thread.sleep(1500L))
   Await.ready(g, Duration(3L, TimeUnit.SECONDS))
 
-  system.shutdown()
+  system.terminate()
 }

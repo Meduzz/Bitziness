@@ -54,7 +54,7 @@ trait Engine {
       Map()
     }
 
-    action.action(UnroutingRequest(inet, request, request.uri.query.toMap ++ pathParams, materializer, ec))
+    action.action(UnroutingRequest(inet, request, request.uri.query().toMap ++ pathParams, materializer, ec))
   }
 
   private def method(request: HttpRequest):String = {

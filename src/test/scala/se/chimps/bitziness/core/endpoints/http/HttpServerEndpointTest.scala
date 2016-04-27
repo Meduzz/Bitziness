@@ -38,7 +38,7 @@ class HttpServerEndpointTest extends FunSuite with Unrouting with RequestBuilder
     expectResponse(200, Seq("file.html"))(handleRequest(new InetSocketAddress(12345), request("GET", "/static/file.html")))
     expectResponse(200, Seq("some.kind.of.key"))(handleRequest(new InetSocketAddress(12345), request("GET", "/key/some.kind.of.key")))
     expectResponse(200, Seq("Your name is John Doe."))(handleRequest(new InetSocketAddress(12345), request("POST", "/form").withEntity("surname=Doe&name=John")))
-    expectResponse(200, Seq("ew", "ekil", "sknuhc"))(handleRequest(new InetSocketAddress(12345), request("PUT", "/chunks").withEntity(Chunked(ContentTypes.`text/plain`, Source(chunks))))) // chunks needs to be of scala.collection.immutable apparently.
+    expectResponse(200, Seq("ew", "ekil", "sknuhc"))(handleRequest(new InetSocketAddress(12345), request("PUT", "/chunks").withEntity(Chunked(ContentTypes.`text/plain(UTF-8)`, Source(chunks))))) // chunks needs to be of scala.collection.immutable apparently.
     expectResponse(200, Seq("54321"))(handleRequest(new InetSocketAddress(54321), request("GET", "/ip")))
   }
 
@@ -47,7 +47,7 @@ class HttpServerEndpointTest extends FunSuite with Unrouting with RequestBuilder
 
     assert(response.status.intValue() == status, s"Status code was not $status, but ${response.status.intValue()}.")
     headers.foreach(h => {
-      assert(response.getHeader(h.name()).isDefined, s"Header ${h.name()} was not defined.")
+      assert(response.getHeader(h.name()).isPresent, s"Header ${h.name()} was not defined.")
       assert(response.getHeader(h.name()).get.value().equals(h.value()), s"Header value of ${h.name()} did not match, was ${response.getHeader(h.name()).get.value()}, expected ${h.value()}.")
     })
 
@@ -57,7 +57,6 @@ class HttpServerEndpointTest extends FunSuite with Unrouting with RequestBuilder
         val unchunked = d.dataBytes.map(_.utf8String).runFold[Seq[String]](Seq[String]())((a, b) => { a ++ Seq(b) })
 
         whenReady(unchunked) { chunks =>
-          println(chunks)
           chunks
         }
       }
@@ -115,7 +114,7 @@ class MyOtherController extends Controller with ResponseBuilders {
     req.asEntityStream(new StringDecoder()).map(chunks => {
       import scala.collection.immutable.Seq
       val bits = Seq.concat(chunks.map(_.reverse).map(ChunkStreamPart(_)))
-      Ok().withEntity(Chunked(ContentTypes.`text/plain`, Source(bits)))
+      Ok().withEntity(Chunked(ContentTypes.`text/plain(UTF-8)`, Source(bits)))
     })
   })
 	get("/ip", Action.sync { req =>

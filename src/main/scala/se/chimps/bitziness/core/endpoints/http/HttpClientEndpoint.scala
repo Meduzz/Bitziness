@@ -2,9 +2,9 @@ package se.chimps.bitziness.core.endpoints.http
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.event.LoggingAdapter
-import akka.http.ConnectionPoolSettings
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
-import akka.http.scaladsl.{Http, HttpsContext}
+import akka.http.scaladsl.settings.ConnectionPoolSettings
+import akka.http.scaladsl.{Http, HttpsConnectionContext}
 import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.{Cancel, Request}
 import akka.stream.scaladsl.{Sink, Source}
@@ -35,7 +35,7 @@ trait ConnectionBuilder {
   def host(address:String, port:Int):ConnectionBuilder
   def connectionPoolSettings(settings:ConnectionPoolSettings):ConnectionBuilder
   def logger(log:LoggingAdapter):ConnectionBuilder
-  def securityContext(context:HttpsContext):ConnectionBuilder
+  def securityContext(context:HttpsConnectionContext):ConnectionBuilder
   def build(useHttps:Boolean):ActorRef
 }
 
@@ -44,7 +44,7 @@ private class ConnectionBuilderImpl(implicit materializer:Materializer, system:A
   var port:Int = 8080
   var settings:ConnectionPoolSettings = _
   var log:LoggingAdapter = _
-  var context:Option[HttpsContext] = None
+  var context:HttpsConnectionContext = Http().defaultClientHttpsContext
 
   override def host(address:String, port:Int):ConnectionBuilder = {
     host = address
@@ -62,8 +62,8 @@ private class ConnectionBuilderImpl(implicit materializer:Materializer, system:A
     this
   }
 
-  override def securityContext(context:HttpsContext):ConnectionBuilder = {
-    this.context = Some(context)
+  override def securityContext(context:HttpsConnectionContext):ConnectionBuilder = {
+    this.context = context
     this
   }
 
@@ -71,7 +71,7 @@ private class ConnectionBuilderImpl(implicit materializer:Materializer, system:A
   override def build(secure:Boolean):ActorRef = {
     if (settings != null && log != null) {
       if (secure) {
-        Http().cachedHostConnectionPoolTls[Promise[HttpResponse]](host, port, settings, context, log).to(Sink.foreach(tuple => {
+        Http().cachedHostConnectionPoolHttps[Promise[HttpResponse]](host, port, context, settings, log).to(Sink.foreach(tuple => {
           val (response, promise) = tuple
           promise.complete(response)
         })).runWith(Source.actorPublisher(Props(classOf[HttpClientActor])))
@@ -83,7 +83,7 @@ private class ConnectionBuilderImpl(implicit materializer:Materializer, system:A
       }
     } else if (settings != null) {
       if (secure) {
-        Http().cachedHostConnectionPoolTls[Promise[HttpResponse]](host, port, settings, context).to(Sink.foreach(tuple => {
+        Http().cachedHostConnectionPoolHttps[Promise[HttpResponse]](host, port, context, settings).to(Sink.foreach(tuple => {
           val (response, promise) = tuple
           promise.complete(response)
         })).runWith(Source.actorPublisher(Props(classOf[HttpClientActor])))
@@ -95,7 +95,7 @@ private class ConnectionBuilderImpl(implicit materializer:Materializer, system:A
       }
     } else if (log != null) {
       if (secure) {
-        Http().cachedHostConnectionPoolTls[Promise[HttpResponse]](host, port = port, log = log, httpsContext = context).to(Sink.foreach(tuple => {
+        Http().cachedHostConnectionPoolHttps[Promise[HttpResponse]](host, port = port, log = log, connectionContext = context).to(Sink.foreach(tuple => {
           val (response, promise) = tuple
           promise.complete(response)
         })).runWith(Source.actorPublisher(Props(classOf[HttpClientActor])))
@@ -107,7 +107,7 @@ private class ConnectionBuilderImpl(implicit materializer:Materializer, system:A
       }
     } else {
       if (secure) {
-        Http().cachedHostConnectionPoolTls[Promise[HttpResponse]](host, port, httpsContext = context).to(Sink.foreach(tuple => {
+        Http().cachedHostConnectionPoolHttps[Promise[HttpResponse]](host, port, connectionContext = context).to(Sink.foreach(tuple => {
           val (response, promise) = tuple
           promise.complete(response)
         })).runWith(Source.actorPublisher(Props(classOf[HttpClientActor])))

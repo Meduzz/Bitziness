@@ -38,7 +38,7 @@ class LessSandboxyIOTest extends FunSuite with TestKitBase with BeforeAndAfterAl
   }
 
   override protected def afterAll(): Unit = {
-    system.shutdown()
+    system.terminate()
   }
 }
 

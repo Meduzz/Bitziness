@@ -40,8 +40,8 @@ class CamelEndpointTest extends FunSuite with TestKitBase with BeforeAndAfterAll
   }
 
   override protected def afterAll(): Unit = {
-    system.shutdown()
     super.afterAll()
+    system.terminate()
   }
 }
 

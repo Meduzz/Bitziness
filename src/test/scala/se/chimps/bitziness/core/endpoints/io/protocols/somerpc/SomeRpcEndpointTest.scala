@@ -8,18 +8,19 @@ import akka.actor.{ActorSystem, Props}
 import akka.pattern.ask
 import akka.testkit.{TestKitBase, TestProbe}
 import akka.util.{ByteString, Timeout}
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 import se.chimps.bitziness.core.endpoints.io.protocols.somerpc.Common.{NewConnection, RpcRequest, RpcResponse}
 import se.chimps.bitziness.core.endpoints.io.{BindCommand, ConnectCommand, DisconnectCommand}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
+import scala.concurrent.duration.Duration
 
 /**
  *
  */
-class SomeRpcEndpointTest extends FunSuite with TestKitBase with BeforeAndAfterAll {
+class SomeRpcEndpointTest extends FunSuite with TestKitBase with BeforeAndAfterAll with ScalaFutures {
   implicit lazy val system = ActorSystem("SomeRpcEndpoints")
   implicit val timeout = Timeout(3, TimeUnit.SECONDS)
 
@@ -45,9 +46,9 @@ class SomeRpcEndpointTest extends FunSuite with TestKitBase with BeforeAndAfterA
     val serverConn = serverProbe.expectMsgClass(classOf[NewConnection])
     val connection = clientProbe.expectMsgClass(classOf[NewConnection])
     val futureResp = (connection.connection ? RpcRequest(1, data)).mapTo[RpcResponse]
-    val resp = Await.result[RpcResponse](futureResp, default)
-
-    assert(resp.data.equals(data))
+    whenReady(futureResp) { resp =>
+			assert(resp.data.equals(data))
+		}
   }
 
   test("server send stuff and gets it back it its face") {
@@ -59,9 +60,9 @@ class SomeRpcEndpointTest extends FunSuite with TestKitBase with BeforeAndAfterA
     val serverConn = serverProbe.expectMsgClass(classOf[NewConnection])
     val connection = clientProbe.expectMsgClass(classOf[NewConnection])
     val futureResp = (serverConn.connection ? RpcRequest(1, data)).mapTo[RpcResponse]
-    val resp = Await.result[RpcResponse](futureResp, default)
-
-    assert(resp.data.equals(data))
+		whenReady(futureResp) { resp =>
+			assert(resp.data.equals(data))
+		}
   }
 
   test("disconnecting and stuff") {
@@ -81,5 +82,5 @@ class SomeRpcEndpointTest extends FunSuite with TestKitBase with BeforeAndAfterA
     assert(resp.value.get.isFailure)
   }
 
-  override protected def afterAll(): Unit = system.shutdown()
+  override protected def afterAll(): Unit = system.terminate()
 }

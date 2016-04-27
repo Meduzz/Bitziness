@@ -80,7 +80,7 @@ class IOEndpointTest extends FunSuite with TestKitBase with ByteStringUtil with 
     assert(rest.equals(text), "Text did not match.")
   }
 
-  override protected def afterAll(): Unit = system.shutdown()
+  override protected def afterAll(): Unit = system.terminate()
 }
 
 case class Send(text:String)

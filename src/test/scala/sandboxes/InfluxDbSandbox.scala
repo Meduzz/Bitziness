@@ -17,5 +17,5 @@ object InfluxDbSandbox extends App {
   service ! DecimalMetric(BigDecimal("22.53"), "test", "decimal", None, Map())
   (1 to 7).foreach(i => service ! LongMetric(i, "test", "test1", None, Map()))
 
-  system.shutdown()
+  system.terminate()
 }

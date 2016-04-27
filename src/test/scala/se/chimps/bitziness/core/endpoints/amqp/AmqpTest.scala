@@ -1,13 +1,9 @@
 package se.chimps.bitziness.core.endpoints.amqp
 
-import java.util.concurrent.TimeUnit
-
 import akka.actor._
-import akka.testkit.{TestProbe, TestKitBase}
-import io.github.drexin.akka.amqp.AMQP.{Publish, Delivery}
-import org.scalatest.{Assertions, BeforeAndAfterAll, Tag, FunSuite}
-
-import scala.concurrent.duration.FiniteDuration
+import akka.testkit.{TestKitBase, TestProbe}
+import io.github.drexin.akka.amqp.AMQP.{Delivery, Publish}
+import org.scalatest.{Assertions, BeforeAndAfterAll, FunSuite, Tag}
 
 /**
  * Test of the amqp endpoint.
@@ -26,7 +22,7 @@ class AmqpTest extends FunSuite with TestKitBase with BeforeAndAfterAll {
   }
 
   override protected def afterAll(): Unit = {
-    system.shutdown()
+    system.terminate()
   }
 }
 

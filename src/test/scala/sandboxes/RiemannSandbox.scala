@@ -2,14 +2,14 @@ package sandboxes
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{PoisonPill, Props, ActorSystem}
+import akka.actor.{ActorSystem, Props}
 import se.chimps.bitziness.core.generic.Init
-import se.chimps.bitziness.core.generic.metrics.{LongMetric, DecimalMetric, BooleanMetric, StringMetric}
-import se.chimps.bitziness.core.services.metrics.adapters.{RiemannSettings, RiemannMetricsService}
+import se.chimps.bitziness.core.generic.metrics.{BooleanMetric, DecimalMetric, LongMetric, StringMetric}
+import se.chimps.bitziness.core.services.metrics.adapters.{RiemannMetricsService, RiemannSettings}
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-import scala.concurrent.ExecutionContext.Implicits.global
 
 object RiemannSandbox extends App {
   val system = ActorSystem("RiemannSandbox")
@@ -26,5 +26,5 @@ object RiemannSandbox extends App {
   val g = Future(Thread.sleep(1500L))
   Await.ready(g, Duration(3L, TimeUnit.SECONDS))
 
-  system.shutdown()
+  system.terminate()
 }

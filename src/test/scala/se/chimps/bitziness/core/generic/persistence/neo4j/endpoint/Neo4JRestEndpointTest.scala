@@ -12,7 +12,6 @@ import scala.concurrent.Future
 
 class Neo4JRestEndpointTest extends FunSuite with TestKitBase with BeforeAndAfterAll {
   import TestModel._
-  import Implicits.global
 
   implicit lazy val system = ActorSystem("neo4j-rest")
 
@@ -101,7 +100,7 @@ class Neo4JRestEndpointTest extends FunSuite with TestKitBase with BeforeAndAfte
     assert(path.length == 2)
   }
 
-  override protected def afterAll(): Unit = system.shutdown()
+  override protected def afterAll(): Unit = system.terminate()
 }
 
 object TestModel {

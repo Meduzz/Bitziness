@@ -26,12 +26,10 @@ class ViewExplicitImplicit(response:HttpResponse) {
   def withView(view:View):HttpResponse = {
     val charSet = HttpCharset.custom(view.charset)
 
-    val contentType = MediaType.parse(view.contentType) match {
-      case Left(errors) => {
-        None
-      }
-      case Right(mediaType) => Some(mediaType.withCharset(charSet))
-    }
+    val contentType = ContentType.parse(view.contentType) match {
+			case Left(error) => None
+			case Right(content) => Some(content)
+		}
 
     if (contentType.isEmpty) {
       response.withEntity(HttpEntity(view.render()))

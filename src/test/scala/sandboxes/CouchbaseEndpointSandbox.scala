@@ -43,7 +43,7 @@ object CouchbaseEndpointSandbox extends App {
   val future = Future(Thread.sleep(1500L))
   Await.ready(future, Duration(3L, TimeUnit.SECONDS))
 
-  system.shutdown()
+  system.terminate()
 }
 
 class CouchbaseEndpointSandbox extends Service with PipeToSupport {

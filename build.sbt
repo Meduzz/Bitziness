@@ -1,26 +1,24 @@
 name := "Bitziness"
 
-version := "0.7"
+version := "0.7.1"
 
-scalaVersion := "2.11.1"
+scalaVersion := "2.11.7"
 
 resolvers += "spray repo" at "http://repo.spray.io"
 
-resolvers += "rediscala" at "http://dl.bintray.com/etaty/maven"
-
 resolvers += "clojars" at "http://clojars.org/repo"
 
-libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.3.7"
+libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.4.4"
 
-libraryDependencies += "com.typesafe.akka" %% "akka-camel" % "2.3.7"
+libraryDependencies += "com.typesafe.akka" %% "akka-camel" % "2.4.4"
 
-libraryDependencies += "com.typesafe.akka" %% "akka-cluster" % "2.3.7"
+libraryDependencies += "com.typesafe.akka" %% "akka-cluster" % "2.4.4"
 
-libraryDependencies += "com.typesafe.akka" %% "akka-agent" % "2.3.7"
+libraryDependencies += "com.typesafe.akka" %% "akka-agent" % "2.4.4"
 
-libraryDependencies += "com.typesafe.akka" %% "akka-slf4j" % "2.3.7"
+libraryDependencies += "com.typesafe.akka" %% "akka-slf4j" % "2.4.4"
 
-libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % "2.3.7" % "test"
+libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % "2.4.4" % "test"
 
 libraryDependencies += "com.rabbitmq" % "amqp-client" % "3.2.2"
 
@@ -28,7 +26,7 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.0" % "test"
 
 libraryDependencies += "io.spray" % "spray-can_2.11" % "1.3.1"
 
-libraryDependencies += "com.etaty.rediscala" %% "rediscala" % "1.4.0"
+libraryDependencies += "com.github.etaty" %% "rediscala" % "1.6.0"
 
 libraryDependencies += "org.json4s" %% "json4s-native" % "3.2.10"
 
@@ -38,9 +36,9 @@ libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.0.13"
 
 libraryDependencies += "de.neuland-bfi" % "jade4j" % "0.4.2"
 
-libraryDependencies += "com.typesafe.akka" %% "akka-stream-experimental" % "1.0"
+libraryDependencies += "com.typesafe.akka" %% "akka-stream" % "2.4.4"
 
-libraryDependencies += "com.typesafe.akka" %% "akka-http-core-experimental" % "1.0"
+libraryDependencies += "com.typesafe.akka" %% "akka-http-core" % "2.4.4"
 
 libraryDependencies += "com.aphyr" % "riemann-java-client" % "0.4.0"
 

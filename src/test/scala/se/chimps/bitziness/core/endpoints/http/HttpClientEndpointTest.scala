@@ -37,7 +37,7 @@ class HttpClientEndpointTest extends FunSuite with TestKitBase with BeforeAndAft
   }
 
   override protected def afterAll():Unit = {
-    system.shutdown()
+    system.terminate()
   }
 }
 

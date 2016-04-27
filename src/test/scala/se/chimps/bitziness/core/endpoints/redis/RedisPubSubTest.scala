@@ -23,18 +23,18 @@ class RedisPubSubTest extends FunSuite with TestKitBase with BeforeAndAfterAll {
 
     val abc = probe.expectMsgClass(classOf[Message])
     val abc2 = probe.expectMsgClass(classOf[PMessage])
-    Assertions.assert(abc.data.equals("test"))
-    Assertions.assert(abc2.data.equals("test"))
+    Assertions.assert(abc.data.utf8String.equals("test"))
+    Assertions.assert(abc2.data.utf8String.equals("test"))
 
     endpoint ! new RedisPublish("a.b.d", "spam")
 
     val abd = probe.expectMsgClass(classOf[PMessage])
-    Assertions.assert(abd.data.equals("spam"))
+    Assertions.assert(abd.data.utf8String.equals("spam"))
   }
 
   override protected def afterAll(): Unit = {
     super.afterAll()
-    system.shutdown()
+    system.terminate()
   }
 }
 

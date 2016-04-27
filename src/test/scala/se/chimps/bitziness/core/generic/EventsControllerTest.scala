@@ -2,12 +2,12 @@ package se.chimps.bitziness.core.generic
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.testkit.{TestActorRef, TestKitBase, TestProbe}
-import org.scalatest.FunSuite
+import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
 /**
  * Tests for the events module.
  */
-class EventsControllerTest extends FunSuite with TestKitBase {
+class EventsControllerTest extends FunSuite with TestKitBase with BeforeAndAfterAll {
   implicit lazy val system = ActorSystem("test")
   val eventStream = EventStreamImpl()
 
@@ -32,6 +32,8 @@ class EventsControllerTest extends FunSuite with TestKitBase {
 
     probe.expectNoMsg()
   }
+
+  override protected def afterAll(): Unit = system.terminate()
 }
 
 case class Ping() extends Event

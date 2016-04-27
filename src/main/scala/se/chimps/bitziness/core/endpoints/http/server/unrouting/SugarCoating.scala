@@ -1,6 +1,7 @@
 package se.chimps.bitziness.core.endpoints.http.server.unrouting
 
 import java.net.InetSocketAddress
+import java.nio.charset.Charset
 import java.util.concurrent.TimeUnit
 
 import akka.http.scaladsl.model.HttpEntity._
@@ -38,7 +39,7 @@ trait SugarCoating {
 
     for {
       content <- dechunk[String](raw.entity, decoder)
-      query <- Future(Query(content, raw.entity.contentType.charset().nioCharset))
+      query <- Future(Query(content, raw.entity.contentType.charsetOption.map(c => c.nioCharset()).getOrElse(Charset.defaultCharset())))
     } yield query.toMap
   }
 

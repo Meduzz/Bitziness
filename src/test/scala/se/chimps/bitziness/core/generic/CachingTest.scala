@@ -84,7 +84,7 @@ class CachingTest extends FunSuite {
     assert(!cache.has("test").get[Boolean])
     assert(!cache.has("spam").get[Boolean])
 
-    system.shutdown()
+    system.terminate()
   }
 
   test("RedisCache does some advanced features") {
@@ -113,7 +113,7 @@ class CachingTest extends FunSuite {
     assert(!cache.has("advanced.test").get[Boolean])
     assert(!cache.has("advanced.spam").get[Boolean])
 
-    system.shutdown()
+    system.terminate()
   }
 }
 
