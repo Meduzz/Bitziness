@@ -1,7 +1,5 @@
 package se.chimps.bitziness.core.services.healthcheck
 
-import scala.concurrent.{ExecutionContext, Future}
-
 /**
  *
  */

@@ -68,7 +68,7 @@ class FakeActivateService extends Service with PipeToSupport {
   }
 }
 
-class ActivateEndpointSandbox(override val service:ActorRef) extends ActivateEndpoint with PipeToSupport {
+class ActivateEndpointSandbox extends ActivateEndpoint with PipeToSupport {
   implicit val timeout = Timeout(3L, TimeUnit.SECONDS)
 
   override def dbContext: ActivateContext = InMemoryContext

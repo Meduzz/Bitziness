@@ -113,7 +113,7 @@ object TestModel {
   case class UseAlgorithm(start:Node, end:Node, name:String, special:String)
 }
 
-class TestNeo4JEndpoint(override val service:ActorRef) extends Neo4JRestEndpoint with PipeToSupport {
+class TestNeo4JEndpoint(val service:ActorRef) extends Neo4JRestEndpoint with PipeToSupport {
   import TestModel._
 
   implicit val ec = Implicits.global

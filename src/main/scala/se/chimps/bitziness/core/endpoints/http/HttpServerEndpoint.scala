@@ -11,8 +11,9 @@ import akka.stream.scaladsl.Sink
 import se.chimps.bitziness.core.Endpoint
 import se.chimps.bitziness.core.endpoints.http.server.unrouting.{Controller, Unrouting}
 
-import scala.concurrent.Future
 import scala.concurrent.duration.Duration
+import scala.concurrent.{Future, Promise}
+import scala.util.{Try, Failure, Random, Success}
 
 /**
  *
@@ -61,13 +62,38 @@ trait HttpServerBuilder {
 }
 
 private case class HttpServerBuilderImpl(host:String, port:Int, binder:Class[_<:AbstractHttpServerBinder], system:ActorSystem) extends HttpServerBuilder {
-  import system.dispatcher
   override def listen(host:String, port:Int):HttpServerBuilder = copy(host, port)
   override def binder(binder:Class[_<:AbstractHttpServerBinder]):HttpServerBuilder = copy(binder = binder)
 
   override def build():Future[ActorRef] = {
-    system.actorSelection(s"/user/$host:$port").resolveOne(Duration(3, TimeUnit.SECONDS)).recover({
-      case e:Throwable => system.actorOf(Props(binder, host, port), s"$host:$port")
-    })
+		val promise = Promise[ActorRef]()
+		Try(system.actorOf(Props(binder, host, port), s"$host:$port")) match {
+			case s:Success[ActorRef] => {
+				promise.complete(s)
+			}
+			case f:Failure[ActorRef] => {
+				createActor(promise)
+			}
+		}
+		promise.future
   }
+
+	private def createActor(promise:Promise[ActorRef], lock:Int = 0):Unit = {
+		import scala.concurrent.ExecutionContext.Implicits.global
+
+		Thread.sleep(Random.nextInt(1000))
+		val actor = system.actorSelection(s"/user/$host:$port").resolveOne(Duration(3, TimeUnit.SECONDS))
+		actor.onComplete {
+			case s:Success[ActorRef] => {
+				promise.complete(s)
+			}
+			case f:Failure[ActorRef] => {
+				if (lock > 3) {
+					promise.complete(f)
+				} else {
+					createActor(promise, lock + 1)
+				}
+			}
+		}
+	}
 }

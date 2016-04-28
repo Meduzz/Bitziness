@@ -1,8 +1,7 @@
 package se.chimps.bitziness.core
 
-import akka.actor.{Props, Actor, ActorRef}
+import akka.actor.{Actor, ActorRef, Props}
 import se.chimps.bitziness.core.generic._
-import se.chimps.bitziness.core.services.healthcheck.HealthChecks
 
 import scala.reflect.ClassTag
 
@@ -27,6 +26,4 @@ abstract class Service extends Actor with HasFeature with ReceiveChain {
   def initEndpoint[T<:Endpoint](factory:ActorFactory[T])(implicit tag:ClassTag[T]):ActorRef = {
     context.system.actorOf(Props(factory.actor), factory.name)
   }
-
-  def healthCheck(name:String, check:()=>Boolean):Unit = HealthChecks.register(name, check)
 }

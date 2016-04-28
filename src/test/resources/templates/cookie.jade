@@ -1,17 +1,19 @@
-!!! 5
+!!!
 html
-  head
-    title #{title}
-  body
-    h1 #{title}
-    form(method="get")
-      input(type="text" name="key" placeholder="Cookie key.")
-      input(type="text" name="value" placeholder="Cookie value.")
-      input(type="submit" value="Save")
-    form(method="get")
-      input(type="text" name="view" placeholder="Cookie key" value="#{key}")
-      input(type="submit" value="show")
-    form(method="get")
-      input(type="text" name="delete" placeholder="Cookie key")
-      input(type="submit" value="expire")
-    p Cookie value: #{key} = #{cookie}.
+	head
+		title #{title}
+	body
+		h1 #{title}
+		form(method="get")
+			input(type="text", name="key", placeholder="Cookie key.")
+			input(type="text", name="value", placeholder="Cookie value.")
+			input(type="submit", value="Save")
+		form(method="get")
+			input(type="text", name="view", placeholder="Cookie key", value="#{key}")
+			input(type="submit", value="show")
+
+		form(method="get")
+			input(type="text", name="delete", placeholder="Cookie key")
+			input(type="submit", value="expire")
+
+		p Cookie value: #{key} = #{cookie}.
