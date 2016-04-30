@@ -5,12 +5,12 @@ import java.util.concurrent.TimeUnit
 import akka.actor.ActorRef
 import akka.http.javadsl.model.headers.SetCookie
 import akka.http.scaladsl.model.headers.HttpCookie
-import akka.http.scaladsl.model.{DateTime, HttpResponse}
+import akka.http.scaladsl.model.{ContentTypes, DateTime, HttpResponse}
 import akka.pattern._
 import akka.stream.ActorMaterializer
 import akka.util.{ByteString, Timeout}
 import se.chimps.bitziness.core.Service
-import se.chimps.bitziness.core.endpoints.http.server.unrouting.{Action, Controller, ResponseBuilders}
+import se.chimps.bitziness.core.endpoints.http.server.unrouting.{UnroutingDsl, Action, Controller, ResponseBuilders}
 import se.chimps.bitziness.core.endpoints.http.{HttpServerBuilder, HttpServerEndpoint}
 import se.chimps.bitziness.core.generic.HealthCheck
 import se.chimps.bitziness.core.generic.logging.Log
@@ -36,12 +36,12 @@ class PingService extends Service with Log with HealthCheck {
   }
 }
 
-class PingEndpoint(val service:ActorRef) extends HttpServerEndpoint with Log with HealthCheck {
+class PingEndpoint(val service:ActorRef) extends HttpServerEndpoint with Log with HealthCheck with UnroutingDsl with ResponseBuilders {
   implicit val timeout = Timeout(3l, TimeUnit.SECONDS)
   implicit val materializer = ActorMaterializer()(context)
-  import context.dispatcher
+	implicit val ec = context.dispatcher
 
-  override def createServer(builder:HttpServerBuilder):Future[ActorRef] = {
+	override def createServer(builder:HttpServerBuilder):Future[ActorRef] = {
     info("Setting up the PingEndpoint.")
 
     builder.listen("localhost", 8080).build()
@@ -66,16 +66,24 @@ class PingEndpoint(val service:ActorRef) extends HttpServerEndpoint with Log wit
     registerController(new PingController(self))
 
     healthCheck("PingEndpoint", () => 1==1)
+
+    get("/").toModel(noModel)
+			.withAction(_ => Future(Jade4j.classpath("templates/hello.jade", Map("title"->"Hello world!"))))
+			.finalize(jade => Future(Ok().withView(jade)))
   }
+
+	override def errorMapping: PartialFunction[Throwable, HttpResponse] = {
+		case e:Throwable => {
+			error("Error mapping caught an error.", error = Some(e))
+			Error().withEntity(ContentTypes.`text/plain(UTF-8)`, e.getMessage)
+		}
+	}
 }
 
 class PingController(val endpoint:ActorRef) extends Controller with ResponseBuilders {
   implicit val executor = global
   implicit val timeout = Timeout(3l, TimeUnit.SECONDS)
 
-  get("/", Action.sync { req =>
-    Ok().withView(Jade4j.classpath("templates/hello.jade", Map("title"->"Hello world!")))
-  })
   get("/ping", Action { req =>
     val pong = (endpoint ? "ping").mapTo[String]
     pong.map(resp => Ok().withView(Jade4j.classpath("templates/ping.jade", Map("pong" -> resp))))

@@ -13,4 +13,8 @@ trait ActionRegistry {
       actions = actions ++ Map(method -> (actions.getOrElse(method, List()) ++ acts))
     })
   }
+
+  def registerDefinition(definition: ActionDefinition):Unit = {
+		actions = actions ++ Map(definition.method -> (actions.getOrElse(definition.method, List()) ++ List(definition)))
+	}
 }

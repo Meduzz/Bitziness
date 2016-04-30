@@ -9,7 +9,7 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import se.chimps.bitziness.core.Endpoint
-import se.chimps.bitziness.core.endpoints.http.server.unrouting.{Controller, Unrouting}
+import se.chimps.bitziness.core.endpoints.http.server.unrouting.{ActionDefinition, Controller, Unrouting}
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Future, Promise}
@@ -24,7 +24,12 @@ trait HttpServerEndpoint extends Endpoint {
 
   def createServer(builder:HttpServerBuilder):Future[ActorRef]
 
-  // TODO this does not really belong here, neither does the Routed as default above.
+	/**
+		* This needs to be called after the akka http server has started.
+		* Calling from Actor.preStart are late enough.
+		*
+		* @param controller the controller to register.
+		*/
   def registerController(controller:Controller):Unit = {
     server.foreach(ref => ref ! controller)
   }
@@ -44,6 +49,7 @@ class Routed(val host:String, val port:Int) extends AbstractHttpServerBinder(hos
 
   override def receive:Receive = {
     case c:Controller => registerController(c)
+		case a:ActionDefinition => registerDefinition(a)
   }
 
   @throws[Exception](classOf[Exception])
