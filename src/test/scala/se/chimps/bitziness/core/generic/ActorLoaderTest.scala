@@ -13,26 +13,29 @@ class ActorLoaderTest extends FunSuite with ActorLoader with BeforeAndAfterAll w
   implicit val timeout = Timeout(1L, TimeUnit.SECONDS)
 
   test("Start one, find one") {
+		val factory = ActorFactory("First", () => new MyActor())
     val first = system.actorOf(Props(classOf[MyActor]), "First")
 
-    whenReady(loadOrCreate[MyActor]("/user/First", "First")) { second =>
+    whenReady(loadOrCreate[MyActor]("/user/First", factory)) { second =>
       assert(second.path.equals(first.path))
     }
   }
 
   test("starting with an empty sheet") {
-    val first = whenReady(loadOrCreate[MyActor]("/user/Second", "Second")) { second =>
+		val factory = ActorFactory("Second", () => new MyActor())
+
+		val first = whenReady(loadOrCreate[MyActor]("/user/Second", factory)) { second =>
       second
     }
 
-    whenReady(loadOrCreate[MyActor]("/user/Second", "Second")) { second =>
+    whenReady(loadOrCreate[MyActor]("/user/Second", factory)) { second =>
       assert(second.path.equals(first.path))
     }
   }
 
   override protected def afterAll():Unit = {
     super.afterAll()
-    system.shutdown()
+    system.terminate()
   }
 }
 

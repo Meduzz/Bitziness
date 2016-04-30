@@ -1,8 +1,9 @@
 package se.chimps.bitziness.core.generic
 
 import akka.actor.ActorSystem
+import example.Example.ExampleMessage
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
-import se.chimps.bitziness.core.generic.Serializers.{JSONSerializer, ObjectSerializer}
+import se.chimps.bitziness.core.generic.Serializers.{ProtobufSerializer, JSONSerializer, ObjectSerializer}
 
 /**
  * Tests of serializers.
@@ -60,6 +61,23 @@ class SerializersTest extends FunSuite with BeforeAndAfterAll {
     assert(reborn.equals(subject), "reborn was not equal to the subject.")
   }
 
+  test("habla protobuf?") {
+		val pbSerializer = new Protobufs
+		val message = ExampleMessage.newBuilder()
+		  .setName("Bitzness")
+		  .setDescription("A framework with focus on bitznesslogic.")
+		  .build()
+
+		val bytes = pbSerializer.serialize(message)
+		assert(bytes.length == message.getSerializedSize)
+
+		val reborn = pbSerializer.deserialize[ExampleMessage](bytes)
+		assert(reborn.hasName)
+		assert(reborn.hasDescription)
+		assert(reborn.getName.equals(message.getName))
+		assert(reborn.getDescription.equals(message.getDescription))
+	}
+
   override protected def afterAll():Unit = {
     serializer.shutdown()
   }
@@ -70,5 +88,7 @@ class Serializer extends ObjectSerializer with JSONSerializer {
 
   def shutdown() = system.terminate()
 }
+
+class Protobufs extends ProtobufSerializer
 
 case class Simple(name:String)

@@ -1,9 +1,9 @@
-package se.chimps.bitziness.core.services.logging.adapters
+package se.chimps.bitziness.core.services.logging.delegates
 
-import akka.actor.{Actor, ActorLogging}
-import se.chimps.bitziness.core.services.logging.{LoggingService, Adapter}
+import akka.event.LoggingAdapter
+import se.chimps.bitziness.core.services.logging.LoggingDelegate
 
-class ActorLoggingBacked extends LoggingService with ActorLogging { self:Actor =>
+class ActorLoggingDelegate(log:LoggingAdapter) extends LoggingDelegate {
 
   override def info(sender:String, message:String, meta:Map[String, String]):Unit = {
     log.mdc ++ meta.map(m => (m._1, m._2))

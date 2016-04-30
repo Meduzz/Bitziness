@@ -1,13 +1,14 @@
 package se.chimps.bitziness.core.services.metrics.adapters
 
 import com.aphyr.riemann.client.{RiemannClient, RiemannBatchClient, IRiemannClient}
-import se.chimps.bitziness.core.services.metrics.MetricService
+import se.chimps.bitziness.core.services.metrics.MetricsDelegate
 
-class RiemannMetricsService(val settings:RiemannSettings, override val host:String) extends MetricService {
+class RiemannMetricsService(val host:String, val settings:RiemannSettings) extends MetricsDelegate {
 
-  var client:IRiemannClient = _
+  val client:IRiemannClient = new RiemannBatchClient(RiemannClient.tcp(settings.host, settings.port), settings.buffer)
+	client.connect()
 
-  override def metric(host: String, service: String, name: String, metric: Long, state: Option[String], metadata: Map[String, String]): Unit = {
+  override def metric(service: String, name: String, metric: Long, state: Option[String], metadata: Map[String, String]): Unit = {
     val event = client.event()
       .host(host)
       .service(s"$service.$name")
@@ -19,7 +20,7 @@ class RiemannMetricsService(val settings:RiemannSettings, override val host:Stri
     client.sendEvent(event.build())
   }
 
-  override def metric(host: String, service: String, name: String, metric: BigDecimal, state: Option[String], metadata: Map[String, String]): Unit = {
+  override def metric(service: String, name: String, metric: BigDecimal, state: Option[String], metadata: Map[String, String]): Unit = {
     val event = client.event()
       .host(host)
       .service(s"$service.$name")
@@ -31,7 +32,7 @@ class RiemannMetricsService(val settings:RiemannSettings, override val host:Stri
     client.sendEvent(event.build())
   }
 
-  override def metric(host: String, service: String, name: String, metric: Boolean, state: Option[String], metadata: Map[String, String]): Unit = {
+  override def metric(service: String, name: String, metric: Boolean, state: Option[String], metadata: Map[String, String]): Unit = {
     val value = metric match {
       case true => 1
       case _ => 0
@@ -48,7 +49,7 @@ class RiemannMetricsService(val settings:RiemannSettings, override val host:Stri
     client.sendEvent(event.build())
   }
 
-  override def metric(host: String, service: String, name: String, metric: String, state: Option[String], metadata: Map[String, String]): Unit = {
+  override def metric(service: String, name: String, metric: String, state: Option[String], metadata: Map[String, String]): Unit = {
     val event = client.event()
       .host(host)
       .service(s"$service.$name")
@@ -58,19 +59,6 @@ class RiemannMetricsService(val settings:RiemannSettings, override val host:Stri
     metadata.foreach(map => event.attribute(map._1, map._2))
 
     client.sendEvent(event.build())
-  }
-
-  override def initialize(): Unit = {
-    super.initialize()
-    client = new RiemannBatchClient(RiemannClient.tcp(settings.host, settings.port), settings.buffer)
-    client.connect()
-  }
-
-  @throws[Exception](classOf[Exception])
-  override def postStop():Unit = {
-    super.postStop()
-    client.flush()
-    client.close()
   }
 }
 

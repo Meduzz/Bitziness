@@ -2,6 +2,7 @@ package se.chimps.bitziness.core.generic
 
 import com.typesafe.config.{Config, ConfigFactory}
 import scala.collection.convert.decorateAsScala._
+import scala.util.Properties
 
 object Configs {
   implicit def defaultHelper[T](option: Option[T]):Default[T] = {
@@ -27,7 +28,7 @@ trait Configs {
     if (config.hasPath(key)) {
       Some(config.getInt(key))
     } else {
-      None
+      Properties.envOrNone(key).map(_.toInt)
     }
   }
 
@@ -35,7 +36,7 @@ trait Configs {
     if (config.hasPath(key)) {
       Some(config.getBoolean(key))
     } else {
-      None
+      Properties.envOrNone(key).map(_.toBoolean)
     }
   }
 
@@ -43,7 +44,7 @@ trait Configs {
     if (config.hasPath(key)) {
       Some(config.getString(key))
     } else {
-      None
+      Properties.envOrNone(key)
     }
   }
 

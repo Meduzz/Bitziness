@@ -1,0 +1,8 @@
+package example;
+
+option java_package="example";
+
+message ExampleMessage {
+	optional string name = 1;
+	optional string description = 2;
+}
