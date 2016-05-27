@@ -31,7 +31,7 @@ class PingService extends Service with Log with HealthCheck {
   }
 
   override def initialize():Unit = {
-    initEndpoint[PingEndpoint](classOf[PingEndpoint], "Http")
+    initEndpoint[PingEndpoint](classOf[PingEndpoint], "Http", true)
     healthCheck("PingService", () => 1==1)
   }
 }
@@ -114,11 +114,6 @@ class PingController(val endpoint:ActorRef) extends Controller with ResponseBuil
     req.asFormData().map {map =>
       Ok().withView(Jade4j.classpath("templates/form.jade", Map("resp" -> s"${map("key")} ${map("value")}")))
     }
-  })
-  get("/healthcheck", Action { req =>
-    (endpoint ? "healthcheck").mapTo[String].map(json => {
-      Ok().withEntity(json)
-    })
   })
 
   implicit def str2bytes(data:String):Array[Byte] = {

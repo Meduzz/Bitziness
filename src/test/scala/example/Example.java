@@ -335,7 +335,7 @@ public final class Example {
 
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(example.Example.ExampleMessage prototype) {
+    public static Builder newBuilder(Example.ExampleMessage prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
@@ -352,7 +352,7 @@ public final class Example {
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder> implements
         // @@protoc_insertion_point(builder_implements:example.ExampleMessage)
-        example.Example.ExampleMessageOrBuilder {
+        Example.ExampleMessageOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return example.Example.internal_static_example_ExampleMessage_descriptor;
@@ -405,7 +405,7 @@ public final class Example {
         return example.Example.ExampleMessage.getDefaultInstance();
       }
 
-      public example.Example.ExampleMessage build() {
+      public Example.ExampleMessage build() {
         example.Example.ExampleMessage result = buildPartial();
         if (!result.isInitialized()) {
           throw newUninitializedMessageException(result);

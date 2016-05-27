@@ -19,8 +19,12 @@ abstract class Service extends Actor with HasFeature with ReceiveChain {
 
   def initialize():Unit
 
-  def initEndpoint[T<:Endpoint](endpoint:Class[T], name:String):ActorRef = {
-    context.system.actorOf(Props(endpoint, self), name)
+  def initEndpoint[T<:Endpoint](endpoint:Class[T], name:String, needServiceRef:Boolean = false):ActorRef = {
+		if (needServiceRef) {
+			context.system.actorOf(Props(endpoint, self), name)
+		} else {
+			context.system.actorOf(Props(endpoint), name)
+		}
   }
 
   def initEndpoint[T<:Endpoint](factory:ActorFactory[T])(implicit tag:ClassTag[T]):ActorRef = {

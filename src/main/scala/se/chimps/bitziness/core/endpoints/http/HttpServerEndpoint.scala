@@ -71,7 +71,7 @@ private case class HttpServerBuilderImpl(host:String, port:Int, binder:Class[_<:
   override def listen(host:String, port:Int):HttpServerBuilder = copy(host, port)
   override def binder(binder:Class[_<:AbstractHttpServerBinder]):HttpServerBuilder = copy(binder = binder)
 
-  override def build():Future[ActorRef] = {
+	override def build():Future[ActorRef] = {
 		val promise = Promise[ActorRef]()
 		Try(system.actorOf(Props(binder, host, port), s"$host:$port")) match {
 			case s:Success[ActorRef] => {
