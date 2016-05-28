@@ -6,13 +6,13 @@ import akka.actor.ActorSystem
 import akka.util.ByteString
 import redis.RedisClient
 import se.chimps.bitziness.core.generic.Caching.Cache
-import se.chimps.bitziness.core.generic.Serializers.JSONSerializer
+import se.chimps.bitziness.core.generic.serializers.JSONSerializer
 
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
-import scala.concurrent.{ExecutionContext, Promise, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.reflect.ClassTag
-import scala.util.{Success, Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 /**
  * Some caching abstractions and implementations.

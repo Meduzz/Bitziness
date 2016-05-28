@@ -2,8 +2,8 @@ package se.chimps.bitziness.core.generic
 
 import java.util.UUID
 
-import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.Controller
-import se.chimps.bitziness.core.generic.Serializers.JSONSerializer
+import se.chimps.bitziness.core.endpoints.http.server.unrouting.Controller
+import se.chimps.bitziness.core.generic.serializers.JSONSerializer
 
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.Future

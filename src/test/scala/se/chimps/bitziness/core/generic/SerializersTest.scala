@@ -3,7 +3,8 @@ package se.chimps.bitziness.core.generic
 import akka.actor.ActorSystem
 import example.Example.ExampleMessage
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
-import se.chimps.bitziness.core.generic.Serializers.{ProtobufSerializer, JSONSerializer, ObjectSerializer}
+import Serializers.{JSONSerializer, ObjectSerializer, ProtobufSerializer}
+import se.chimps.bitziness.core.generic.serializers.Serializers
 
 /**
  * Tests of serializers.

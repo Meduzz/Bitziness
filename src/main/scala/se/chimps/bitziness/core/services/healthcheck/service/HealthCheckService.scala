@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.ContentTypes
 import se.chimps.bitziness.core.Service
 import se.chimps.bitziness.core.endpoints.http.server.unrouting.{Action, Controller, ResponseBuilders}
 import se.chimps.bitziness.core.endpoints.http.{HttpServerBuilder, HttpServerEndpoint}
-import se.chimps.bitziness.core.generic.Serializers.JSONSerializer
+import se.chimps.bitziness.core.generic.serializers.JSONSerializer
 import se.chimps.bitziness.core.services.healthcheck.HealthChecks
 
 import scala.concurrent.{ExecutionContext, Future}
