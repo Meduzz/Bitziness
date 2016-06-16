@@ -19,7 +19,8 @@ import scala.concurrent.{Future, Promise}
  */
 trait HttpClientEndpoint extends Endpoint {
   implicit val system = context.system
-  implicit val materializer = ActorMaterializer()
+  implicit val materializer = ActorMaterializer()(context)
+
   val connection = setupConnection(new ConnectionBuilderImpl)
 
   def setupConnection(builder:ConnectionBuilder):ActorRef
@@ -128,7 +129,7 @@ private class HttpClientActor extends ActorPublisher[(HttpRequest, Promise[HttpR
   val maxBufferSize = 100
   var buffer = Seq[RequestTransport]()
 
-  override def receive:Receive = {
+  def receive:Receive = {
     case r:RequestTransport => {
       if (buffer.size == maxBufferSize) {
         r.promise.failure(new RuntimeException("Buffer is full."))

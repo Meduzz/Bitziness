@@ -9,9 +9,8 @@ import com.couchbase.client.java.document.{JsonDocument, RawJsonDocument}
 import com.couchbase.client.java.env.DefaultCouchbaseEnvironment
 import se.chimps.bitziness.core.Service
 import se.chimps.bitziness.core.generic.Init
-import Serializers.JSONSerializer
 import se.chimps.bitziness.core.generic.persistence.couchbase.endpoint.CouchbaseEndpoint
-import se.chimps.bitziness.core.generic.serializers.Serializers
+import se.chimps.bitziness.core.generic.serializers.JSONSerializer
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration

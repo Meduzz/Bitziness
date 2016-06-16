@@ -20,7 +20,7 @@ import scala.concurrent.{ExecutionContext, Future}
 /**
  *
  */
-// TODO these asX methods will prolly fail on a second request since streams are drained.
+// TODO these asX methods will prolly fail on a second request since streams are not drained.
 // TODO move durations to implicits.
 trait SugarCoating {
   def inet:InetSocketAddress
@@ -95,14 +95,11 @@ trait SugarCoating {
 		* @param noWsResponse a default "error"-handler, when the expected upgrade header was missing.
 		* @return returns a HttpResponse.
 		*/
-  def handleWebsocket(func:(Message)=>Message, noWsResponse:HttpResponse):HttpResponse = {
-    val response = raw.header[UpgradeToWebSocket] match {
-      case Some(upgrade) => upgrade.handleMessages(Flow[Message].map(func))
+  def handleWebsocket(func:(Message)=>Message, noWsResponse:HttpResponse, subProtocol:Option[String] = None):HttpResponse = {
+    raw.header[UpgradeToWebSocket] match {
+      case Some(upgrade) => upgrade.handleMessages(Flow[Message].map(func), subProtocol)
       case None => noWsResponse
     }
-
-		println(response)
-		response
   }
 }
 

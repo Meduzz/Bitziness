@@ -3,9 +3,8 @@ package se.chimps.bitziness.core.endpoints.http
 import akka.Done
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.ws.{Message, WebSocketUpgradeResponse}
-import akka.stream.QueueOfferResult._
 import akka.stream.scaladsl._
-import akka.stream.{Materializer, OverflowStrategy}
+import akka.stream.{Materializer, OverflowStrategy, QueueOfferResult}
 import se.chimps.bitziness.core.Endpoint
 
 import scala.concurrent.Future
@@ -34,16 +33,13 @@ trait WsClientEndpoint extends Endpoint {
 		*/
 	def buildConnection():Flow[Message, Message, Future[WebSocketUpgradeResponse]]
 
-	def onSend(message:Message):Unit = queue.offer(message).map({
-		case Enqueued => println(s"message was put in queue")
-		case Dropped => println("message got dropped")
-		case Failure(e) => e.printStackTrace()
-		case QueueClosed => println("queue was closed")
-	})
+	def onSend(message:Message):Future[QueueOfferResult] = queue.offer(message)
 
 	def onError(e:Throwable):Unit = queue.fail(e)
 
-	def onComplete():Unit = queue.complete()
+	def onComplete():Unit = {
+		queue.complete()
+	}
 
 	@throws[Exception](classOf[Exception])
 	override def preStart(): Unit = {
@@ -52,9 +48,10 @@ trait WsClientEndpoint extends Endpoint {
 		val ((theQueue, response), closed) = source.viaMat(buildConnection())(Keep.both).toMat(sink)(Keep.both).run()(materializer)
 
 		response.flatMap { res =>
-			if (res.response.status == StatusCodes.OK) {
+			if (res.response.status == StatusCodes.SwitchingProtocols) {
 				Future.successful(Done)
 			} else {
+				// TODO let implementors deal with this somehow.
 				throw new RuntimeException(s"Upgrade to websockets failed. (${res.response.status})")
 			}
 		}
