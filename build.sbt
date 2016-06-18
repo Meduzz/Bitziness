@@ -47,3 +47,6 @@ libraryDependencies += "com.couchbase.client" % "java-client" % "2.0.3"
 libraryDependencies += "net.fwbrasil" % "activate-core_2.11" % "1.7"
 
 libraryDependencies += "org.neo4j" % "neo4j" % "2.3.0"
+
+libraryDependencies += "com.google.guava" % "guava" % "19.0"
+
