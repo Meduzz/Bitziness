@@ -1,10 +1,8 @@
 name := "Bitziness"
 
-version := "0.7.3"
+version := "0.7.5"
 
 scalaVersion := "2.11.7"
-
-resolvers += "spray repo" at "http://repo.spray.io"
 
 resolvers += "clojars" at "http://clojars.org/repo"
 
@@ -23,8 +21,6 @@ libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % "2.4.4" % "test"
 libraryDependencies += "com.rabbitmq" % "amqp-client" % "3.2.2"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.0" % "test"
-
-libraryDependencies += "io.spray" % "spray-can_2.11" % "1.3.1"
 
 libraryDependencies += "com.github.etaty" %% "rediscala" % "1.6.0"
 
@@ -49,4 +45,3 @@ libraryDependencies += "net.fwbrasil" % "activate-core_2.11" % "1.7"
 libraryDependencies += "org.neo4j" % "neo4j" % "2.3.0"
 
 libraryDependencies += "com.google.guava" % "guava" % "19.0"
-
