@@ -2,7 +2,7 @@ package se.chimps.bitziness.core.services.metrics.adapters
 
 import akka.actor.ActorRef
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest, HttpResponse, Uri}
-import se.chimps.bitziness.core.endpoints.http.{ConnectionBuilder, HttpClientEndpoint}
+import se.chimps.bitziness.core.endpoints.net.http.{ConnectionBuilder, HttpClientEndpoint}
 import se.chimps.bitziness.core.services.metrics.MetricsDelegate
 
 class InfluxDbMetricsDelegate(val influxdbEndpoint:ActorRef, val host:String) extends MetricsDelegate {

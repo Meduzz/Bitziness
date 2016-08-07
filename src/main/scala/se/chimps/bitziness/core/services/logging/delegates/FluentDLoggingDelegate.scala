@@ -2,7 +2,7 @@ package se.chimps.bitziness.core.services.logging.delegates
 
 import akka.actor.ActorRef
 import akka.http.scaladsl.model._
-import se.chimps.bitziness.core.endpoints.http.{ConnectionBuilder, HttpClientEndpoint}
+import se.chimps.bitziness.core.endpoints.net.http.{ConnectionBuilder, HttpClientEndpoint}
 import se.chimps.bitziness.core.generic.serializers.JSONSerializer
 import se.chimps.bitziness.core.services.logging.LoggingDelegate
 

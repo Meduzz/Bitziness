@@ -11,7 +11,7 @@ import net.fwbrasil.activate.migration.Migration
 import net.fwbrasil.activate.storage.memory.TransientMemoryStorage
 import se.chimps.bitziness.core.Service
 import se.chimps.bitziness.core.generic.Init
-import se.chimps.bitziness.core.generic.persistence.activate.endpoint.ActivateEndpoint
+import se.chimps.bitziness.core.endpoints.persistence.activate.endpoint.ActivateEndpoint
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration

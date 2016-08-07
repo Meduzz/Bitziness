@@ -10,8 +10,8 @@ import akka.pattern._
 import akka.stream.ActorMaterializer
 import akka.util.{ByteString, Timeout}
 import se.chimps.bitziness.core.Service
-import se.chimps.bitziness.core.endpoints.http.server.unrouting.{UnroutingDsl, Action, Controller, ResponseBuilders}
-import se.chimps.bitziness.core.endpoints.http.{HttpServerBuilder, HttpServerEndpoint}
+import se.chimps.bitziness.core.endpoints.net.http.server.unrouting.{UnroutingDsl, Action, Controller, ResponseBuilders}
+import se.chimps.bitziness.core.endpoints.net.http.{HttpServerBuilder, HttpServerEndpoint}
 import se.chimps.bitziness.core.generic.HealthCheck
 import se.chimps.bitziness.core.generic.logging.Log
 import se.chimps.bitziness.core.generic.view.Jade4j

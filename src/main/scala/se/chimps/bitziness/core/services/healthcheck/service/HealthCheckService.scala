@@ -3,8 +3,8 @@ package se.chimps.bitziness.core.services.healthcheck.service
 import akka.actor.ActorRef
 import akka.http.scaladsl.model.ContentTypes
 import se.chimps.bitziness.core.Service
-import se.chimps.bitziness.core.endpoints.http.server.unrouting.{Action, Controller, ResponseBuilders}
-import se.chimps.bitziness.core.endpoints.http.{HttpServerBuilder, HttpServerEndpoint}
+import se.chimps.bitziness.core.endpoints.net.http.server.unrouting.{Action, Controller, ResponseBuilders}
+import se.chimps.bitziness.core.endpoints.net.http.{HttpServerBuilder, HttpServerEndpoint}
 import se.chimps.bitziness.core.generic.serializers.JSONSerializer
 import se.chimps.bitziness.core.services.healthcheck.HealthChecks
 

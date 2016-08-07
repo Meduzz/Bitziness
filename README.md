@@ -32,7 +32,7 @@ And the only business logic are the PING that bounces back as a PONG.
 
 ```
 import se.chimps.bitziness.core.{Service}
-import se.chimps.bitziness.core.endpoints.rest.{EndpointDefinition, RestEndpointBuilder, RESTEndpoint}
+import se.chimps.bitziness.core.endpoints.net.rest.{EndpointDefinition, RestEndpointBuilder, RESTEndpoint}
 
 class PingService extends Service {
   override def handle:Receive = {
@@ -50,10 +50,10 @@ Now we only need the endpoint, it can look like this. This type of endpoint also
 ```
 import akka.actor.ActorRef
 import akka.util.Timeout
-import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Action
-import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Framework.Controller
-import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.Model.Responses.Ok
-import se.chimps.bitziness.core.endpoints.rest.spray.unrouting.view.Scalate
+import se.chimps.bitziness.core.endpoints.net.rest.spray.unrouting.Action
+import se.chimps.bitziness.core.endpoints.net.rest.spray.unrouting.Framework.Controller
+import se.chimps.bitziness.core.endpoints.net.rest.spray.unrouting.Model.Responses.Ok
+import se.chimps.bitziness.core.endpoints.net.rest.spray.unrouting.view.Scalate
 import se.chimps.bitziness.core.generic.Waitable._
 import se.chimps.bitziness.core.{Service}
 import akka.pattern._
