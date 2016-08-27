@@ -45,3 +45,9 @@ libraryDependencies += "net.fwbrasil" % "activate-core_2.11" % "1.7"
 libraryDependencies += "org.neo4j" % "neo4j" % "2.3.0"
 
 libraryDependencies += "com.google.guava" % "guava" % "19.0"
+
+libraryDependencies += "io.grpc" % "grpc-netty" % "0.15.0"
+
+libraryDependencies += "io.grpc" % "grpc-protobuf" % "0.15.0"
+
+libraryDependencies += "io.grpc" % "grpc-stub" % "0.15.0"

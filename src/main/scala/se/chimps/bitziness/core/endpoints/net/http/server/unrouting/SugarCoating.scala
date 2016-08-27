@@ -8,11 +8,11 @@ import akka.http.scaladsl.model.HttpEntity._
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.model.ws.{Message, UpgradeToWebSocket}
-import akka.http.scaladsl.model.{HttpResponse, HttpEntity, HttpRequest}
+import akka.http.scaladsl.model.{HttpEntity, HttpRequest, HttpResponse}
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Flow, Sink}
 import akka.util.ByteString
-import se.chimps.bitziness.core.generic.Codecs.Decoder
+import se.chimps.bitziness.core.generic.codecs.{Decoder, StringDecoder}
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
@@ -101,8 +101,4 @@ trait SugarCoating {
       case None => noWsResponse
     }
   }
-}
-
-class StringDecoder extends Decoder[ByteString, String] {
-  override def decode(in:ByteString):String = in.utf8String
 }

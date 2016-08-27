@@ -12,6 +12,7 @@ import org.scalatest.FunSuite
 import org.scalatest.concurrent.ScalaFutures
 import se.chimps.bitziness.core.endpoints.net.http.client.RequestBuilders
 import se.chimps.bitziness.core.endpoints.net.http.server.unrouting._
+import se.chimps.bitziness.core.generic.codecs.StringDecoder
 
 import scala.concurrent.ExecutionContext.Implicits
 import scala.concurrent.duration.Duration

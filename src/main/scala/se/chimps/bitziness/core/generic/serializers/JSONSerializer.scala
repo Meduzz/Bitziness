@@ -8,4 +8,5 @@ trait JSONSerializer {
 
 	def fromJSON[T](json:String)(implicit manifest:Manifest[T]):T = parse(json).extract[T]
 	def toJSON(instance:AnyRef):String =  write(instance)
+	def withParsed[T](json:String)(func:(JValue=>T)):T = func(parse(json))
 }
