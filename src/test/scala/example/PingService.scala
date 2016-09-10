@@ -111,7 +111,7 @@ class PingController(val endpoint:ActorRef) extends Controller with ResponseBuil
     Ok().withView(Jade4j.classpath("templates/form.jade", Map()))
   })
   post("/form", Action { req =>
-    req.asFormData().map {map =>
+    req.asFormData().map { map =>
       Ok().withView(Jade4j.classpath("templates/form.jade", Map("resp" -> s"${map("key")} ${map("value")}")))
     }
   })

@@ -30,7 +30,7 @@ class SerializersTest extends FunSuite with BeforeAndAfterAll {
 
     val json = serializer.toJSON(subject)
     assert(json != null, "the json string was null...")
-    assert(!json.isEmpty, "the json string was empty.")
+    assert(json.nonEmpty, "the json string was empty.")
     assert(json.contains(name), "the json string does not contain name.")
 
     val reborn = serializer.fromJSON[Simple](json)
@@ -43,7 +43,7 @@ class SerializersTest extends FunSuite with BeforeAndAfterAll {
 
     val json = serializer.toJSON(subject)
     assert(json != null, "the json string was null")
-    assert(!json.isEmpty, "the json string was empty")
+    assert(json.nonEmpty, "the json string was empty")
 
     val reborn = serializer.fromJSON[List[Simple]](json)
     assert(reborn.size == 2, "the size of the reborn are incorrect.")
