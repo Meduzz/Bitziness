@@ -1,8 +1,18 @@
+import com.trueaccord.scalapb.{ScalaPbPlugin => PB}
+
 name := "Bitziness"
 
 version := "0.7.5"
 
 scalaVersion := "2.11.7"
+
+PB.protobufSettings
+
+sourceDirectory in PB.protobufConfig := new File("src/test/resources")
+
+PB.protoc in PB.protobufConfig := "/usr/local/bin/protoc"
+
+PB.flatPackage in PB.protobufConfig := true
 
 resolvers += "clojars" at "http://clojars.org/repo"
 
